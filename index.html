@@ -385,9 +385,9 @@
 
       <div class="form-grid" id="lockForm" style="display:none;">
         <div class="full" style="font-family:'Kanit',sans-serif; font-weight:600; font-size:15px; color:var(--yellow);">🔒 ล็อกคู่เฉพาะเจาะจง</div>
-        <div class="full" style="font-size:12.5px; color:var(--muted); margin-top:-4px;">เลือก 2 คนที่ต้องการบังคับให้เป็นบัดดี้–บัดเดอร์กัน คนที่เหลือ (คนอื่นทั้งหมด) จะยังถูกสุ่มจับคู่ตามปกติ การล็อก/ปลดล็อกจะจับคู่คนที่เหลือใหม่ทันที</div>
-        <div><label>คนที่ 1</label><select id="lock_a"></select></div>
-        <div><label>คนที่ 2</label><select id="lock_b"></select></div>
+        <div class="full" style="font-size:12.5px; color:var(--muted); margin-top:-4px;">บังคับทิศทาง "คนให้ → คนรับ" คนหนึ่งโดยเฉพาะ (เช่น A ต้องให้ของกับ B แน่ๆ) คนที่เหลือทั้งหมดยังถูกสุ่มจับเป็นลูกโซ่ตามปกติ ระบบจะไม่ให้ล็อกย้อนกลับเป็นคู่ให้กันเอง การล็อก/ปลดล็อกจะจับคู่คนที่เหลือใหม่ทันที</div>
+        <div><label>คนให้ (บัดดี้)</label><select id="lock_a"></select></div>
+        <div><label>คนรับ (บัดเดอร์)</label><select id="lock_b"></select></div>
         <div class="full"><button class="btn primary small" id="lockBtn">🔒 ล็อกคู่นี้</button></div>
         <div class="full" id="lockedList" style="display:flex; flex-direction:column; gap:6px; margin-top:4px;"></div>
       </div>
@@ -412,7 +412,7 @@
         <table class="admin-table" id="adminTable">
           <thead>
             <tr>
-              <th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>รหัสนิสิต</th><th>คณะ</th><th>ปี</th><th>คู่ปัจจุบัน</th><th></th>
+              <th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>รหัสนิสิต</th><th>คณะ</th><th>ปี</th><th>ความสัมพันธ์</th><th></th>
             </tr>
           </thead>
           <tbody id="adminTbody"></tbody>
@@ -454,8 +454,8 @@ const ADMIN_PASSCODE_LIMITED = "manyagatong34";   // เข้าแอดมิ
 let adminLevel = null; // 'full' | 'limited'
 
 let participants = [];
-let pairs = []; // array of arrays of ids
-let lockedPairs = []; // array of [idA, idB] — fixed, excluded from random shuffle
+let assignments = {}; // { giverId: receiverId } — a directed chain/cycle: giver gives to receiver
+let lockedPairs = []; // array of [giverId, receiverId] — fixed directed edges, admin-forced
 
 function toast(msg){
   const t = document.getElementById('toast');
@@ -474,36 +474,67 @@ function shuffle(arr){
   return a;
 }
 
-// Randomly pairs up a plain list of ids (no locks involved). Odd leftover becomes a trio.
-function randomGroupsOf(ids){
-  const shuffled = shuffle(ids);
-  const result = [];
-  let i = 0;
-  while(i < shuffled.length){
-    const remaining = shuffled.length - i;
-    if(remaining === 3){
-      result.push([shuffled[i], shuffled[i+1], shuffled[i+2]]);
-      i += 3;
-    } else if (remaining === 1){
-      // stray single person (only happens if locks left an odd remainder) — attach to last group
-      if(result.length){ result[result.length-1] = result[result.length-1].concat(shuffled[i]); }
-      else { result.push([shuffled[i]]); }
-      i += 1;
-    } else {
-      result.push([shuffled[i], shuffled[i+1]]);
-      i += 2;
-    }
-  }
-  return result;
-}
-
-// Combines fixed locked groups with a fresh random shuffle of everyone else.
-function makePairs(list, locks){
+// Builds a directed giving-chain (like Secret Santa): every person gives to exactly
+// one other person and receives from exactly one other person. No one gives to
+// themself, and no two people ever give directly to each other (no mutual pairs) —
+// unless there are only 2 people left to match, in which case it's unavoidable.
+// Admin-locked edges (fixed giver->receiver) are respected and chained together;
+// everyone else is randomly woven into the same big loop.
+function buildAssignment(list, locks){
   locks = locks || [];
-  const lockedIds = new Set(locks.flat());
-  const remainingIds = list.map(p=>p.id).filter(id=>!lockedIds.has(id));
-  const randomGroups = randomGroupsOf(remainingIds);
-  return [...locks.map(g=>g.slice()), ...randomGroups];
+  const allIds = list.map(p=>p.id);
+  const nextOf = {}, prevOf = {};
+  locks.forEach(([g,r])=>{ nextOf[g]=r; prevOf[r]=g; });
+
+  const visited = new Set();
+  const chains = [];
+  const touched = new Set();
+  locks.forEach(([g,r])=>{ touched.add(g); touched.add(r); });
+
+  // Walk each locked chain starting from its head (nobody locked to give to it yet)
+  touched.forEach(id=>{
+    if(visited.has(id) || prevOf[id] !== undefined) return;
+    let cur = id;
+    const chain = [cur];
+    visited.add(cur);
+    while(nextOf[cur] !== undefined){
+      const nxt = nextOf[cur];
+      if(visited.has(nxt)) break; // safety guard
+      chain.push(nxt);
+      visited.add(nxt);
+      cur = nxt;
+    }
+    chains.push(chain);
+  });
+
+  // Any touched id still unvisited belongs to an already-closed loop of locks — leave as is
+  touched.forEach(id=>{
+    if(visited.has(id)) return;
+    let cur = id;
+    visited.add(cur);
+    while(nextOf[cur] !== undefined && !visited.has(nextOf[cur])){
+      cur = nextOf[cur];
+      visited.add(cur);
+    }
+  });
+
+  // Everyone else (no locks at all) becomes their own trivial chain
+  allIds.forEach(id=>{
+    if(!visited.has(id)){ chains.push([id]); visited.add(id); }
+  });
+
+  // Randomly weave all chains into one big loop: each chain's tail feeds the next chain's head
+  const order = shuffle(chains);
+  const finalEdges = locks.map(e=>e.slice());
+  for(let i=0;i<order.length;i++){
+    const tail = order[i][order[i].length-1];
+    const nextHead = order[(i+1)%order.length][0];
+    finalEdges.push([tail, nextHead]);
+  }
+
+  const result = {};
+  finalEdges.forEach(([g,r])=>{ result[g]=r; });
+  return result;
 }
 
 /* =========================================================================
@@ -545,31 +576,33 @@ async function loadState(){
     await fsSet('locked', JSON.stringify(lockedPairs));
   }
   try{
-    pairs = JSON.parse(await fsGet('pairs'));
+    assignments = JSON.parse(await fsGet('assignments'));
   }catch(e){
-    pairs = makePairs(participants, lockedPairs);
-    await fsSet('pairs', JSON.stringify(pairs));
+    assignments = buildAssignment(participants, lockedPairs);
+    await fsSet('assignments', JSON.stringify(assignments));
   }
 }
 
 async function saveParticipants(){ await fsSet('participants', JSON.stringify(participants)); }
 async function saveLocked(){ await fsSet('locked', JSON.stringify(lockedPairs)); }
 async function recomputePairs(){
-  pairs = makePairs(participants, lockedPairs);
-  await savePairs();
+  assignments = buildAssignment(participants, lockedPairs);
+  await saveAssignments();
 }
-async function savePairs(){ await fsSet('pairs', JSON.stringify(pairs)); }
+async function saveAssignments(){ await fsSet('assignments', JSON.stringify(assignments)); }
 
 function findPersonById(id){
   return participants.find(p=>p.id===id);
 }
-function pairGroupOf(id){
-  return pairs.find(g=>g.includes(id));
+// The person this id gives to (their "budder")
+function receiverOf(id){
+  const rid = assignments[id];
+  return rid ? findPersonById(rid) : null;
 }
-function partnersOf(id){
-  const g = pairGroupOf(id);
-  if(!g) return [];
-  return g.filter(x=>x!==id).map(findPersonById).filter(Boolean);
+// The person who gives to this id (their "buddy")
+function giverOf(id){
+  const entry = Object.entries(assignments).find(([g,r])=>r===id);
+  return entry ? findPersonById(entry[0]) : null;
 }
 
 /* ---------------- View switching ---------------- */
@@ -624,38 +657,54 @@ function chipList(str){
     .map(s=>`<span class="chip">${escapeHtml(s)}</span>`).join('');
 }
 
+function personBlock(p, theirMessage, messageLabel){
+  return `
+    <div class="buddy-name">${escapeHtml(p.name)} <span style="color:var(--muted); font-weight:400; font-size:16px;">(${escapeHtml(p.nick)})</span></div>
+    <div class="buddy-meta">${escapeHtml(p.faculty)} · ${escapeHtml(p.year)} · ${escapeHtml(p.sid)}</div>
+    ${p.ig ? `<div class="ig-tag">📸 @${escapeHtml(p.ig.replace('@',''))}</div>` : ''}
+    <div class="chips">${chipList(p.likes)}</div>
+    ${theirMessage ? `<div class="msgbox"><div class="lbl">${messageLabel}</div>${escapeHtml(theirMessage)}</div>` : ''}
+  `;
+}
+
 function showTicket(meId){
   const me = findPersonById(meId);
-  const others = partnersOf(meId);
+  const iGiveTo = receiverOf(meId);   // person you are the "buddy" for (your budder)
+  const givesToMe = giverOf(meId);    // person who is your "buddy"
   const ticketEl = document.getElementById('ticketArea');
   document.getElementById('matchList').innerHTML = '';
   document.getElementById('searchInput').value = me.name;
 
-  if(others.length === 0){
+  if(!iGiveTo && !givesToMe){
     ticketEl.innerHTML = `<div class="ticket"><div class="ticket-top"><div class="kicker">Hi, ${escapeHtml(me.nick)}</div><div class="who">${escapeHtml(me.name)}</div></div><div class="perf"></div><div class="ticket-bottom"><div class="empty-note">ยังไม่ได้จับคู่ให้ตอนนี้ รอแอดมินสุ่มจับคู่นะ</div></div></div>`;
     return;
   }
 
-  const buddyBlocks = others.map(b => `
-    <div class="buddy-name">${escapeHtml(b.name)} <span style="color:var(--muted); font-weight:400; font-size:16px;">(${escapeHtml(b.nick)})</span></div>
-    <div class="buddy-meta">${escapeHtml(b.faculty)} · ${escapeHtml(b.year)} · ${escapeHtml(b.sid)}</div>
-    ${b.ig ? `<div class="ig-tag">📸 @${escapeHtml(b.ig.replace('@',''))}</div>` : ''}
-    <div class="chips">${chipList(b.likes)}</div>
-    ${b.msg2 ? `<div class="msgbox"><div class="lbl">สิ่งที่เขาอยากบอกคุณ</div>${escapeHtml(b.msg2)}</div>` : ''}
-  `).join('<div style="height:16px;"></div>');
+  const buddySection = givesToMe
+    ? personBlock(givesToMe, givesToMe.msg2, 'สิ่งที่บัดดี้อยากบอกคุณ')
+    : '<div class="empty-note">ยังไม่มีใครถูกจับให้เป็นบัดดี้ของคุณ</div>';
+
+  const budderSection = iGiveTo
+    ? personBlock(iGiveTo, iGiveTo.msg1, 'สิ่งที่บัดเดอร์อยากบอกคุณ')
+    : '<div class="empty-note">ยังไม่ได้จับคู่ให้คุณเป็นบัดดี้ของใคร</div>';
 
   ticketEl.innerHTML = `
     <div class="ticket">
       <div class="ticket-top">
         <div class="kicker">This is your buddy card</div>
         <div class="who">${escapeHtml(me.name)} (${escapeHtml(me.nick)})</div>
-        ${me.msg1 ? `<div class="msgbox" style="margin-top:10px;"><div class="lbl">สิ่งที่คุณอยากบอกบัดดี้</div>${escapeHtml(me.msg1)}</div>` : ''}
+        ${me.msg1 ? `<div class="msgbox" style="margin-top:10px;"><div class="lbl">สิ่งที่คุณอยากบอกบัดดี้ของคุณ</div>${escapeHtml(me.msg1)}</div>` : ''}
+        ${me.msg2 ? `<div class="msgbox" style="margin-top:8px;"><div class="lbl">สิ่งที่คุณอยากบอกบัดเดอร์ของคุณ</div>${escapeHtml(me.msg2)}</div>` : ''}
       </div>
       <div class="perf"></div>
       <div class="ticket-bottom">
-        <div class="kicker" style="margin-bottom:6px;">${others.length>1?'บัดดี้ของคุณคือ':'บัดดี้ของคุณคือ'}</div>
-        ${buddyBlocks}
-        ${others.length>1?'<div class="trio-note">กลุ่มนี้มี 3 คนจับคู่ด้วยกัน เพราะจำนวนคนไม่ลงตัวพอดี 🙌</div>':''}
+        <div class="kicker" style="margin-bottom:6px;">🎁 บัดดี้ของคุณ (คนที่ดูแลคุณ) คือ</div>
+        ${buddySection}
+      </div>
+      <div class="perf"></div>
+      <div class="ticket-bottom">
+        <div class="kicker" style="margin-bottom:6px;">🎀 คุณเป็นบัดดี้ให้กับ (บัดเดอร์ของคุณ)</div>
+        ${budderSection}
       </div>
     </div>`;
 }
@@ -664,17 +713,38 @@ document.getElementById('searchBtn').addEventListener('click', doSearch);
 document.getElementById('searchInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
 
 /* ---------------- List view ---------------- */
+// Reconstructs the full loop(s) of givers from the assignments map, e.g. A→B→C→(back to A)
+function traceCycles(){
+  const visited = new Set();
+  const cycles = [];
+  Object.keys(assignments).forEach(startId=>{
+    if(visited.has(startId)) return;
+    const cycle = [];
+    let cur = startId;
+    while(assignments[cur] !== undefined && !visited.has(cur)){
+      visited.add(cur);
+      cycle.push(cur);
+      cur = assignments[cur];
+    }
+    if(cycle.length) cycles.push(cycle);
+  });
+  return cycles;
+}
+
 function renderList(){
   const grid = document.getElementById('pairsGrid');
   const stats = document.getElementById('listStats');
-  stats.innerHTML = `<div class="stat"><b>${participants.length}</b>คนทั้งหมด</div><div class="stat"><b>${pairs.length}</b>คู่/กลุ่ม</div>`;
+  const cycles = traceCycles();
+  stats.innerHTML = `<div class="stat"><b>${participants.length}</b>คนทั้งหมด</div><div class="stat"><b>${cycles.length}</b>วงจรการให้</div>`;
   grid.innerHTML = '';
-  pairs.forEach((g, idx)=>{
-    const people = g.map(findPersonById).filter(Boolean);
+  cycles.forEach((cycleIds, idx)=>{
+    const people = cycleIds.map(findPersonById).filter(Boolean);
     const card = document.createElement('div');
     card.className = 'pair-card';
-    const rows = people.map(p=>`<div class="row">${escapeHtml(p.name)} <span style="color:var(--muted); font-weight:400; font-size:12.5px;">(${escapeHtml(p.nick)})</span></div>`).join('<div class="row" style="justify-content:center;"><span class="cross">×</span></div>');
-    card.innerHTML = `<div class="idx">GROUP ${String(idx+1).padStart(2,'0')}</div>${rows}`;
+    const rows = people.map(p=>`<div class="row">${escapeHtml(p.name)} <span style="color:var(--muted); font-weight:400; font-size:12.5px;">(${escapeHtml(p.nick)})</span></div>`)
+      .join('<div class="row" style="justify-content:center;"><span class="cross">↓</span></div>');
+    const wrap = people.length > 1 ? `<div class="row" style="justify-content:center;"><span class="cross">↺</span></div><div class="row" style="justify-content:center; font-size:12px; color:var(--muted);">วนกลับไปหา ${escapeHtml(people[0].nick)}</div>` : '';
+    card.innerHTML = `<div class="idx">CHAIN ${String(idx+1).padStart(2,'0')} · ${people.length} คน</div>${rows}${wrap}`;
     grid.appendChild(card);
   });
 }
@@ -708,11 +778,13 @@ function isLocked(id){
 function renderAdmin(){
   const stats = document.getElementById('adminStats');
   const lockStat = (adminLevel === 'full') ? `<div class="stat"><b>${lockedPairs.length}</b>คู่ที่ล็อกไว้</div>` : '';
-  stats.innerHTML = `<div class="stat"><b>${participants.length}</b>รายชื่อทั้งหมด</div><div class="stat"><b>${pairs.length}</b>คู่/กลุ่มปัจจุบัน</div>${lockStat}`;
+  stats.innerHTML = `<div class="stat"><b>${participants.length}</b>รายชื่อทั้งหมด</div>${lockStat}`;
   const tbody = document.getElementById('adminTbody');
   tbody.innerHTML = '';
   participants.forEach(p=>{
-    const partners = partnersOf(p.id).map(x=>x.nick).join(', ') || '—';
+    const buddy = giverOf(p.id);
+    const budder = receiverOf(p.id);
+    const relation = `รับจาก: ${buddy ? escapeHtml(buddy.nick) : '—'} · ให้กับ: ${budder ? escapeHtml(budder.nick) : '—'}`;
     const lockTag = (adminLevel === 'full' && isLocked(p.id)) ? ' 🔒' : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -721,7 +793,7 @@ function renderAdmin(){
       <td style="font-family:'IBM Plex Mono',monospace;">${escapeHtml(p.sid)}</td>
       <td>${escapeHtml(p.faculty)}</td>
       <td>${escapeHtml(p.year)}</td>
-      <td>${escapeHtml(partners)}${lockTag}</td>
+      <td>${relation}${lockTag}</td>
       <td><button class="btn small" data-del="${p.id}">ลบ</button></td>
     `;
     tbody.appendChild(tr);
@@ -754,8 +826,9 @@ function renderLockUI(){
   if(lockedPairs.length === 0){
     listEl.innerHTML = '<div style="color:var(--muted); font-size:13px;">ยังไม่มีคู่ที่ล็อกไว้</div>';
   } else {
-    listEl.innerHTML = lockedPairs.map((g, idx)=>{
-      const names = g.map(id=>{ const p = findPersonById(id); return p ? p.nick : '?'; }).join(' <span class="cross">×</span> ');
+    listEl.innerHTML = lockedPairs.map(([g, r], idx)=>{
+      const pg = findPersonById(g), pr = findPersonById(r);
+      const names = `${pg ? escapeHtml(pg.nick) : '?'} <span class="cross">→</span> ${pr ? escapeHtml(pr.nick) : '?'}`;
       return `<div class="locked-row"><div class="names">🔒 ${names}</div><button class="btn small" data-unlock="${idx}">ปลดล็อก</button></div>`;
     }).join('');
     listEl.querySelectorAll('[data-unlock]').forEach(btn=>{
@@ -773,18 +846,20 @@ function renderLockUI(){
 }
 
 document.getElementById('lockBtn').addEventListener('click', async ()=>{
-  const idA = document.getElementById('lock_a').value;
-  const idB = document.getElementById('lock_b').value;
+  const idA = document.getElementById('lock_a').value; // giver
+  const idB = document.getElementById('lock_b').value; // receiver
   if(!idA || !idB || idA === idB){ toast('กรุณาเลือก 2 คนที่ไม่ซ้ำกัน'); return; }
-  // remove either person from any existing lock first
-  lockedPairs = lockedPairs.filter(g=>!g.includes(idA) && !g.includes(idB));
+  const wouldBeMutual = lockedPairs.some(([g,r]) => g === idB && r === idA);
+  if(wouldBeMutual){ toast('ทำไม่ได้ — จะกลายเป็นคู่ให้กันเอง ลองสลับทิศทางหรือเลือกคนอื่นแทน'); return; }
+  // remove either person from any existing lock first (each person: 1 fixed giving role, 1 fixed receiving role)
+  lockedPairs = lockedPairs.filter(([g,r]) => g!==idA && r!==idB);
   lockedPairs.push([idA, idB]);
   await saveLocked();
   await recomputePairs();
   renderAdmin();
   renderLockUI();
   const pa = findPersonById(idA), pb = findPersonById(idB);
-  toast(`ล็อก ${pa.nick} × ${pb.nick} แล้ว 🔒`);
+  toast(`ล็อก ${pa.nick} → ${pb.nick} แล้ว 🔒`);
 });
 
 document.getElementById('shuffleBtn').addEventListener('click', async ()=>{
@@ -798,10 +873,10 @@ document.getElementById('resetSeedBtn').addEventListener('click', async ()=>{
   if(!confirm('รีเซ็ตกลับไปใช้ข้อมูลตั้งต้นจาก Google Sheets? รายชื่อที่เพิ่ม/แก้ไขเอง และคู่ที่ล็อกไว้ทั้งหมดจะหายไป')) return;
   participants = SEED_DATA.slice();
   lockedPairs = [];
-  pairs = makePairs(participants, lockedPairs);
+  assignments = buildAssignment(participants, lockedPairs);
   await saveParticipants();
   await saveLocked();
-  await savePairs();
+  await saveAssignments();
   renderAdmin();
   if(adminLevel === 'full') renderLockUI();
   toast('รีเซ็ตข้อมูลเรียบร้อย');
