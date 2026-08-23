@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jodeh Huesa #34 — Buddy × Budder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800&family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #180F2B;
+    --bg-2: #201533;
+    --surface: #251A3D;
+    --surface-2: #2E2049;
+    --line: #40315C;
+    --coral: #FF5C82;
+    --coral-dim: #7A3550;
+    --yellow: #FFC245;
+    --mint: #5CE6B8;
+    --text: #F3ECE3;
+    --muted: #B6A6CE;
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 12% 8%, rgba(255,92,130,0.14), transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(92,230,184,0.12), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Sarabun', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:28px 18px 80px;}
+
+  /* ---------- Header ---------- */
+  header.hero{ text-align:center; padding: 18px 0 26px; position:relative;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    letter-spacing:.22em;
+    font-size:12px;
+    color: var(--mint);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  h1.title{
+    font-family:'Kanit', sans-serif;
+    font-weight:800;
+    font-size: clamp(34px, 8vw, 58px);
+    line-height:1;
+    margin:0;
+    letter-spacing:-0.01em;
+    background: linear-gradient(180deg, #ffffff 0%, #E9D9FF 65%, var(--coral) 130%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .subtitle{
+    font-family:'Kanit', sans-serif;
+    font-weight:600;
+    font-size: clamp(16px, 3.4vw, 22px);
+    color: var(--text);
+    margin-top: 8px;
+  }
+  .subtitle .x{ color:var(--coral); padding:0 6px; }
+  .tagline{
+    color:var(--muted);
+    font-size:14px;
+    margin-top:10px;
+  }
+
+  /* ---------- Admin access (small wrench, out of the way) ---------- */
+  .admin-fab{
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 15px;
+    cursor: pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity: 0.6;
+    transition: all .15s ease;
+    z-index: 20;
+  }
+  .admin-fab:hover{ opacity:1; color:var(--text); border-color:var(--coral); }
+
+  .view{ display:none; animation: fadeIn .25s ease; }
+  .view.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  /* ---------- Search ---------- */
+  .search-box{
+    display:flex;
+    gap:10px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:8px;
+    box-shadow: var(--shadow);
+  }
+  .search-box input{
+    flex:1;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-family:'Sarabun',sans-serif;
+    font-size:16px;
+    padding:12px 14px;
+  }
+  .search-box input::placeholder{ color:var(--muted); }
+  .search-box button{
+    font-family:'Kanit', sans-serif;
+    font-weight:700;
+    background: var(--coral);
+    color:white;
+    border:none;
+    border-radius:12px;
+    padding: 0 22px;
+    cursor:pointer;
+    font-size:15px;
+  }
+  .search-box button:hover{ filter:brightness(1.08); }
+
+  .match-list{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+  .match-item{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 16px;
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition: border-color .15s ease;
+  }
+  .match-item:hover{ border-color:var(--mint); }
+  .match-item .nm{ font-weight:600; }
+  .match-item .sub{ color:var(--muted); font-size:13px; font-family:'IBM Plex Mono',monospace;}
+
+  .empty-note{ color:var(--muted); text-align:center; padding:26px 10px; font-size:14.5px; }
+
+  /* ---------- Ticket reveal ---------- */
+  .ticket{
+    margin-top: 22px;
+    background: var(--surface);
+    border:1px solid var(--line);
+    border-radius: 20px;
+    overflow:hidden;
+    box-shadow: var(--shadow);
+    animation: reveal .4s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes reveal{ from{ opacity:0; transform: scale(.97) translateY(10px);} to{opacity:1; transform:none;} }
+  .ticket-top{ padding:20px 22px 16px; }
+  .ticket-top .kicker{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase;}
+  .ticket-top .who{ font-family:'Kanit',sans-serif; font-weight:700; font-size:22px; margin-top:4px;}
+  .perf{
+    position:relative;
+    height:0;
+    border-top: 2px dashed var(--line);
+    margin: 0 0;
+  }
+  .perf::before, .perf::after{
+    content:"";
+    position:absolute;
+    top:-11px;
+    width:22px; height:22px;
+    background: var(--bg);
+    border-radius:50%;
+  }
+  .perf::before{ left:-11px; }
+  .perf::after{ right:-11px; }
+
+  .ticket-bottom{ padding: 20px 22px 24px; background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);}
+  .buddy-name{
+    font-family:'Kanit',sans-serif;
+    font-weight:800;
+    font-size: clamp(24px, 5vw, 32px);
+    color: var(--yellow);
+  }
+  .buddy-meta{ color:var(--muted); font-size:14px; margin-top:4px; font-family:'IBM Plex Mono',monospace;}
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+  .chip{
+    font-size:12.5px;
+    background: rgba(255,194,69,0.12);
+    color: var(--yellow);
+    border:1px solid rgba(255,194,69,0.35);
+    padding:5px 11px;
+    border-radius:999px;
+  }
+  .msgbox{
+    margin-top:14px;
+    background: rgba(255,255,255,0.03);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    font-size:14.5px;
+    line-height:1.6;
+  }
+  .msgbox .lbl{ color:var(--mint); font-size:12px; font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px;}
+  .ig-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-top:12px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13.5px;
+    color:var(--mint);
+    background: rgba(92,230,184,0.08);
+    border:1px solid rgba(92,230,184,0.3);
+    padding:6px 12px;
+    border-radius:999px;
+  }
+  .trio-note{
+    margin-top:10px;
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  /* ---------- Pairs grid (list view) ---------- */
+  .pairs-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap:12px;
+    margin-top:18px;
+  }
+  .pair-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+  }
+  .pair-card .row{ display:flex; align-items:center; gap:8px; font-family:'Kanit',sans-serif; font-weight:600; font-size:15px; }
+  .pair-card .row + .row{ margin-top:6px; }
+  .pair-card .cross{ color:var(--coral); font-weight:800; }
+  .pair-card .idx{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin-bottom:8px; }
+
+  .stat-bar{
+    display:flex; gap:10px; flex-wrap:wrap; margin: 6px 0 4px;
+  }
+  .stat{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 16px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .stat b{ color:var(--text); font-size:16px; display:block; font-family:'Kanit',sans-serif;}
+
+  /* ---------- Admin ---------- */
+  .gate{
+    max-width:360px; margin: 30px auto; text-align:center;
+    background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px 22px;
+    box-shadow: var(--shadow);
+  }
+  .gate p{ color:var(--muted); font-size:14px; }
+  .gate input{
+    width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:10px;
+    padding:11px 12px; color:var(--text); font-size:15px; margin-top:10px; text-align:center;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .gate button{
+    margin-top:12px; width:100%;
+    font-family:'Kanit',sans-serif; font-weight:700;
+    background:var(--coral); color:white; border:none; border-radius:10px; padding:11px; cursor:pointer; font-size:15px;
+  }
+  .gate .err{ color:var(--coral); font-size:13px; margin-top:8px; min-height:16px; }
+
+  .admin-panel{ display:none; }
+  .admin-panel.active{ display:block; }
+  .admin-toolbar{ display:flex; gap:10px; flex-wrap:wrap; margin:16px 0; }
+  .btn{
+    font-family:'Kanit',sans-serif; font-weight:600; font-size:14px;
+    border-radius:10px; border:1px solid var(--line); padding:9px 16px; cursor:pointer;
+    background:var(--surface-2); color:var(--text);
+  }
+  .btn:hover{ border-color:var(--mint); }
+  .btn.primary{ background:var(--coral); border-color:var(--coral); color:white; }
+  .btn.warn{ background:var(--yellow); border-color:var(--yellow); color:#241627; }
+  .btn.ghost{ background:transparent; }
+  .btn.small{ padding:5px 10px; font-size:12.5px; }
+
+  table.admin-table{ width:100%; border-collapse:collapse; margin-top:14px; font-size:13.5px; }
+  table.admin-table th, table.admin-table td{
+    text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top;
+  }
+  table.admin-table th{ color:var(--muted); font-weight:600; font-family:'IBM Plex Mono',monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em;}
+  table.admin-table tr:hover td{ background: rgba(255,255,255,0.02); }
+  .table-scroll{ overflow-x:auto; border:1px solid var(--line); border-radius:14px; padding: 4px 10px; background:var(--surface);}
+
+  .form-grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:10px;
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:14px;
+  }
+  .form-grid label{ font-size:12px; color:var(--muted); display:block; margin-bottom:4px; font-family:'IBM Plex Mono',monospace;}
+  .form-grid input, .form-grid textarea, .form-grid select{
+    width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:8px;
+    padding:8px 10px; color:var(--text); font-family:'Sarabun',sans-serif; font-size:14px;
+  }
+  .form-grid .full{ grid-column: 1 / -1; }
+  .locked-row{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background: var(--surface-2); border:1px solid var(--line); border-radius:10px;
+    padding:8px 12px; font-size:13.5px;
+  }
+  .locked-row .names{ font-family:'Kanit',sans-serif; font-weight:600; }
+  .locked-row .names .cross{ color:var(--coral); margin:0 6px; }
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background: var(--mint); color:#12261f; font-family:'Kanit',sans-serif; font-weight:600;
+    padding:10px 20px; border-radius:999px; box-shadow: var(--shadow);
+    opacity:0; pointer-events:none; transition: opacity .2s ease, transform .2s ease;
+    font-size:14px; z-index:50;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
+
+  footer{ text-align:center; color:var(--muted); font-size:12px; margin-top:50px; font-family:'IBM Plex Mono',monospace; }
+
+  @media (max-width:520px){
+    .wrap{ padding: 20px 14px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <button class="admin-fab" id="openAdminBtn" title="แอดมิน">🔧</button>
+
+  <header class="hero">
+    <div class="eyebrow">Baan Jodeh Huesa · รุ่นที่ 34</div>
+    <h1 class="title">JODEH HUESA #34</h1>
+    <div class="subtitle">Buddy<span class="x">×</span>Budder</div>
+    <div class="tagline">พิมพ์ชื่อ ชื่อเล่น หรือรหัสนิสิต เพื่อค้นหาบัดดี้ของคุณ</div>
+  </header>
+
+  <!-- SEARCH VIEW -->
+  <section class="view active" id="view-search">
+    <div class="search-box">
+      <input id="searchInput" type="text" placeholder="พิมพ์ชื่อ ชื่อเล่น หรือรหัสนิสิตของคุณ...">
+      <button id="searchBtn">ค้นหา</button>
+    </div>
+    <div class="match-list" id="matchList"></div>
+    <div id="ticketArea"></div>
+  </section>
+
+  <!-- LIST VIEW (admin-only) -->
+  <section class="view" id="view-list">
+    <button class="btn ghost small" id="backToAdminBtn">← กลับไปแอดมิน</button>
+    <div class="stat-bar" id="listStats"></div>
+    <div class="pairs-grid" id="pairsGrid"></div>
+  </section>
+
+  <!-- ADMIN VIEW -->
+  <section class="view" id="view-admin">
+    <div class="gate" id="adminGate">
+      <div style="font-family:'Kanit',sans-serif; font-weight:700; font-size:18px;">รหัสผ่านแอดมิน</div>
+      <p>สำหรับทีมงานที่ดูแลระบบจับคู่บัดดี้เท่านั้น</p>
+      <input id="adminPass" type="password" placeholder="รหัสผ่าน">
+      <button id="adminUnlock">เข้าสู่ระบบ</button>
+      <div class="err" id="adminErr"></div>
+      <button class="btn ghost small" id="backToSearchBtn" style="margin-top:14px; width:100%;">← กลับไปหน้าค้นหา</button>
+    </div>
+
+    <div class="admin-panel" id="adminPanel">
+      <div class="stat-bar" id="adminStats"></div>
+      <div class="admin-toolbar">
+        <button class="btn primary" id="shuffleBtn">🎲 สุ่มจับคู่ใหม่ทั้งหมด</button>
+        <button class="btn" id="addRowBtn">➕ เพิ่มรายชื่อใหม่</button>
+        <button class="btn" id="viewListBtn">📋 ดูรายชื่อคู่ทั้งหมด</button>
+        <button class="btn ghost" id="resetSeedBtn">↺ รีเซ็ตเป็นข้อมูลตั้งต้น</button>
+      </div>
+
+      <div class="form-grid" id="lockForm" style="display:none;">
+        <div class="full" style="font-family:'Kanit',sans-serif; font-weight:600; font-size:15px; color:var(--yellow);">🔒 ล็อกคู่เฉพาะเจาะจง</div>
+        <div class="full" style="font-size:12.5px; color:var(--muted); margin-top:-4px;">เลือก 2 คนที่ต้องการบังคับให้เป็นบัดดี้–บัดเดอร์กัน คนที่เหลือ (คนอื่นทั้งหมด) จะยังถูกสุ่มจับคู่ตามปกติ การล็อก/ปลดล็อกจะจับคู่คนที่เหลือใหม่ทันที</div>
+        <div><label>คนที่ 1</label><select id="lock_a"></select></div>
+        <div><label>คนที่ 2</label><select id="lock_b"></select></div>
+        <div class="full"><button class="btn primary small" id="lockBtn">🔒 ล็อกคู่นี้</button></div>
+        <div class="full" id="lockedList" style="display:flex; flex-direction:column; gap:6px; margin-top:4px;"></div>
+      </div>
+
+      <div class="form-grid" id="addForm" style="display:none;">
+        <div><label>ชื่อ-นามสกุล</label><input id="f_name"></div>
+        <div><label>ชื่อเล่น</label><input id="f_nick"></div>
+        <div><label>รหัสนิสิต</label><input id="f_sid"></div>
+        <div><label>คณะ</label><input id="f_faculty"></div>
+        <div><label>Instagram</label><input id="f_ig"></div>
+        <div><label>ชั้นปี</label><input id="f_year"></div>
+        <div class="full"><label>สิ่งที่ชอบ</label><input id="f_likes"></div>
+        <div class="full"><label>อยากบอกบัดดี้</label><textarea id="f_msg1" rows="2"></textarea></div>
+        <div class="full"><label>อยากบอกบัดเดอร์</label><textarea id="f_msg2" rows="2"></textarea></div>
+        <div class="full" style="display:flex; gap:8px;">
+          <button class="btn primary" id="saveNewBtn">บันทึก</button>
+          <button class="btn ghost" id="cancelNewBtn">ยกเลิก</button>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="admin-table" id="adminTable">
+          <thead>
+            <tr>
+              <th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>รหัสนิสิต</th><th>คณะ</th><th>ปี</th><th>คู่ปัจจุบัน</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="adminTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer>Made for น้องใหม่ Jodeh Huesa รุ่นที่ 34 · ข้อมูลเก็บไว้ในระบบของเว็บนี้เท่านั้น</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase (ใช้เก็บข้อมูลแทน window.storage ของ Claude เพื่อให้โฮสต์เว็บที่ไหนก็ได้) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* ====================== ตั้งค่า FIREBASE ตรงนี้ก่อนใช้งาน ======================
+   1. ไปที่ https://console.firebase.google.com/ → สร้างโปรเจกต์ใหม่ (ฟรี)
+   2. ในโปรเจกต์ กด "Build" → "Firestore Database" → "Create database"
+      เลือกโหมด "Start in test mode" (เปิดให้อ่าน/เขียนได้ก่อน ค่อยตั้งกฎทีหลัง)
+   3. กลับไปหน้า Project overview → กดไอคอน "</>" (Web) เพื่อเพิ่มเว็บแอป
+      ตั้งชื่ออะไรก็ได้ แล้วคัดลอกค่า firebaseConfig ที่ได้มาวางแทนตรงนี้
+   ================================================================================ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBvg541EOBCnlJWTF6sNA1WNywT3uH1dSA",
+  authDomain: "jdbdbd-a2683.firebaseapp.com",
+  projectId: "jdbdbd-a2683",
+  storageBucket: "jdbdbd-a2683.firebasestorage.app",
+  messagingSenderId: "259823645012",
+  appId: "1:259823645012:web:8fea27b0db9062214c58c1"
+};
+
+const SEED_DATA = [{"id": "p001", "ts": "8/15/2026 15:33", "name": "ปพนธีร์ จำปา", "nick": "โจโจ", "sid": "6842050626", "faculty": "คณะพาณิชยศาสตร์และการบัญชี", "ig": "_pto.jj", "year": "ปี 2", "likes": "มัทฉะ ซอฟต์คุกกี้ อะไรก็ได้ ชิว ๆ", "msg1": "ไม่ชอบกินผัก", "msg2": "เจอกัน ิิ", "status": "เข้าแล้วครับนาย"}, {"id": "p002", "ts": "8/15/2026 15:34", "name": "อริยะกร แก้วเหลี่ยม", "nick": "คิว", "sid": "6843068624", "faculty": "รัฐศาสตร์", "ig": "ordinarykey", "year": "ปี 2", "likes": "ช็อคโกแลต นม ขนมที่ทำจากแป้ง เช่น ขนมปัง ครัวซองค์ โดนัท", "msg1": "spider man สนุกมาก", "msg2": "odyssey สนุกมากก", "status": "เข้าแล้วครับนาย"}, {"id": "p003", "ts": "8/15/2026 15:36", "name": "เยวอน คิม", "nick": "เยวอน", "sid": "6743053024", "faculty": "รัฐศาสตร์", "ig": "yewonn_k", "year": "ปี 3", "likes": "ชอบทุกอย่าง><", "msg1": "รักโจ๊ะเด๊ะ", "msg2": "รักโจ๊ะเด๊ะ", "status": "เข้าแล้วครับนาย"}, {"id": "p004", "ts": "8/15/2026 15:36", "name": "วชิรญา สุขธนาชนม์", "nick": "นาเดียร์", "sid": "6940210322", "faculty": "อักษรศาสตร์", "ig": "ddearcei", "year": "ปี 1", "likes": "พุดดิ้ง มาม่า", "msg1": "ตื่นเต้ลอะ อยากกินรัยจ้ะ 😙😙", "msg2": "ลุ้นนนๆ อยากเทคตอนไหนกะเทคได้ ชิวสุดๆ", "status": "ขะละเพเค้า"}, {"id": "p005", "ts": "8/15/2026 16:22", "name": "ปุณณภา เศวตนันทน์", "nick": "จ๋าจ้า", "sid": "6840140134", "faculty": "นิติศาสตร์", "ig": "jajapnp", "year": "ปี 2", "likes": "ป้อกกี้", "msg1": "รอเจออยุ่น้าาา😻😻", "msg2": "ร้ากน้าาา อยากเจอแล้วๆๆ😘", "status": "ขะละเพเค้า"}, {"id": "p006", "ts": "8/15/2026 16:32", "name": "อชิลฎา ส่วยหวาน", "nick": "อชิ", "sid": "6948107922", "faculty": "BALAC", "ig": "Axshi.9rant", "year": "ปี 1", "likes": "คุณ 😏 หยอก ขนม ชานม ดูไบชูววี่😋😋", "msg1": "ขอเงินหน่อยคับ", "msg2": "เด้อดึงดงๆๆ", "status": "เข้าแล้วครับนาย"}, {"id": "p007", "ts": "8/15/2026 16:33", "name": "สุจิรา พิสุทธิ์กิจจาทร", "nick": "ปาล์มมี่ ก๊าบ", "sid": "6942126027", "faculty": "ครุศาสตร์", "ig": "", "year": "ปี 1", "likes": "ดนตรี", "msg1": "ก๊าบบบบ", "msg2": "ก๊าบบบบ", "status": "เข้าแล้วครับนาย"}, {"id": "p008", "ts": "8/15/2026 16:48", "name": "ณิชชิศา แหวนทอง", "nick": "การ์ตูน", "sid": "6840034828", "faculty": "นิเทศศาสตร์", "ig": "twoneytoons", "year": "ปี 2", "likes": "มาม่าเกาหลี สารพัดของดูไบ กล้วยปั่น", "msg1": "🙊", "msg2": "ฝากพุงด้วยนะคับ รอหม่ำ🤤", "status": "เข้าแล้วครับนาย"}, {"id": "p009", "ts": "8/15/2026 17:14", "name": "ปัณณณัฐ แพร่แสงเอี่ยม", "nick": "ปัณณ์", "sid": "6842316927", "faculty": "ครุศาสตร์", "ig": "j3llypunn", "year": "ปี 2", "likes": "ช็อกโกแลตดูไบ มัทฉะ ซูชิ", "msg1": "จับฉันให้ได้ถ้าคุณกระป๋อง (can)", "msg2": "ฝากตัวด้วยค้าบ ใบ้โหดได้แต่อย่าโหดมาก", "status": "เข้าแล้วครับนาย"}, {"id": "p010", "ts": "8/15/2026 17:31", "name": "ชัพวิชญ์ รักเกียรติเผ่า", "nick": "กันย์", "sid": "6935144513", "faculty": "วิศวกรรมศาสตร์", "ig": "", "year": "ปี 1", "likes": "ข้าวซอย แอลกอฮอร์", "msg1": "อยากเล่นบอร์ดเกมว่ะ", "msg2": "ไปเล่นบอร์ดเกมกัน", "status": "เข้าแล้วครับนาย"}, {"id": "p011", "ts": "8/15/2026 18:24", "name": "พรภวิษย์ วงษ์จันทร์", "nick": "กัน", "sid": "6941033324", "faculty": "รัฐศาสตร์", "ig": "gunjunarr", "year": "ปี 1", "likes": "เธอ", "msg1": "รักนะครับ", "msg2": "67", "status": "เข้าแล้วครับนาย"}, {"id": "p012", "ts": "8/15/2026 19:44", "name": "เพียบพร้อม ดาราสูรย์", "nick": "พร้อม", "sid": "6940186022", "faculty": "อักษรศาสตร์", "ig": "miau.uu._.48", "year": "ปี 1", "likes": "ทุกอย่างที่เป็นรสโคล่า / อานิเมะ / มังงะ / เจลลี่กาแฟ / โซบะเย็น / สีชมพู / แมว", "msg1": "ก็ลองทายดูว่าผมคือใคร ทายดู (รักน้าา เจอกันค้าบ🫶🏻)", "msg2": "แล้วเจอกันน้าา ยินดีที่ได้รู้จักเน่อ เพื่อนโจ๊ะเด๊ะ🫶🏻💙", "status": "ขะละเพเค้า"}, {"id": "p013", "ts": "8/15/2026 19:50", "name": "สาริศา ยืนหยัดชัย", "nick": "แอม", "sid": "6932261821", "faculty": "วิศวกรรมศาสตร์", "ig": "hadorance", "year": "ปี 1", "likes": "ชามะลิใส่บุกคริสตัล (olino) , ข้าวกะเพราหมูสับ + ไก่ทอด", "msg1": "รู้มั้ยทำไมคอมพิวเตอร์ถึวหนาว", "msg2": "รู้มั้ยทำไมปลาถึงไม่เรียนหนังสือ", "status": "เข้าแล้วครับนาย"}, {"id": "p014", "ts": "8/15/2026 20:02", "name": "อธิวัฒน์ พุทธศักดิ์โสภณ", "nick": "เบสท์", "sid": "6730115139", "faculty": "วิทยาศาสตร์การกีฬา", "ig": "", "year": "ปี 3", "likes": "ออกกําลังกาย อ่านหนังสือ ดูหนังงง กินของอร่อย", "msg1": "อยู่ฝั่งเล็ก นั่งป๊อบสาย 2 มาเรียนค่าาาา", "msg2": "สวัสดีจ่ะ", "status": "ขะละเพเค้า"}, {"id": "p015", "ts": "8/15/2026 21:07", "name": "ชมภรัช เปี่ยมศักดิ์", "nick": "ใบพัด", "sid": "6931011233", "faculty": "เภสัชศาสตร์", "ig": "_pb.chpch", "year": "ปี 1", "likes": "ของหวาน ขนม ชาไทยหวานน้อย", "msg1": "อยากรู้จักกันเร้วๆน้า🫶🏻", "msg2": "ยินดีที่ได้รุ้จักกกกก🫶🏻🫶🏻", "status": "เข้าแล้วครับนาย"}, {"id": "p016", "ts": "8/15/2026 22:37", "name": "พิชามญชุ์ เพทายประเสริฐกุล", "nick": "ตาณ", "sid": "6932193821", "faculty": "วิศวกรรมศาสตร์", "ig": "pp.pitchy", "year": "ปี 1", "likes": "ของหวานนนน", "msg1": "ต้องการเติมน้ำตาล", "msg2": "ขอน้ำตาลด่วน", "status": "ขะละเพเค้า"}, {"id": "p017", "ts": "8/15/2026 22:39", "name": "กิตติทัต เศวตวาท", "nick": "อาคัง", "sid": "6931003021", "faculty": "วิศวะกรรมศาสตร์", "ig": "", "year": "ปี 1", "likes": "ก๋วยเตี๋ยวเส้นเล็กน้ำตก", "msg1": "รู้มั้ยว่าบัดเด้อคือใคร ถ้าอยากรู้ ดูใต้คอมเม้น ☺️", "msg2": "ฟิสิกส์แม่งยากวะ", "status": "เข้าแล้วครับนาย"}, {"id": "p018", "ts": "8/16/2026 6:31", "name": "ฐิติรัตน์ จันทร์เพ็ญ", "nick": "แป้งหอม", "sid": "6940063422", "faculty": "อักษรศาสตร์", "ig": "uzntliez", "year": "ปี 1", "likes": "ชินจัง ช็อกโกแลต(ที่ไม่หวานมาก) ของรสจัด(ไม่หวาน)", "msg1": "เจอกัน !", "msg2": "ช้าน ร้ากกก เทอออออ", "status": "ขะละเพเค้า"}, {"id": "p019", "ts": "8/16/2026 6:42", "name": "จรรญา ศรีประเสริฐศักดิ์", "nick": "นิว", "sid": "6940029122", "faculty": "อักษรศาสตร์", "ig": "janyanetai", "year": "ปี 1", "likes": "กิน เที่ยว ดูหนัง", "msg1": "ถ้าเหนื่อยให้มองฟ้านะ แล้วจะเจอก้อนเมฆ", "msg2": "แปลว่าอะไรอ่ะพี่", "status": "ขะละเพเค้า"}, {"id": "p020", "ts": "8/16/2026 10:16", "name": "ณฐมน ติวัฒนาสุข", "nick": "วิ้ง", "sid": "6838059023", "faculty": "วิทยาศาสตร์", "ig": "wink.nt", "year": "ปี 2", "likes": "ชอบของหวานที่มีกล้วย, ชานมไข่มุกหวาน 25%, ผลไม้สด-แห้ง, ทุกอย่างที่เป็นแมว", "msg1": "อยากกินอะไรก็บอกกันได้ฮะ (เราอยู่คณะฝั่งใหญ่)", "msg2": "จะคุยด้วยแน่นอนเมื่อว่าง😸", "status": "ขะละเพเค้า"}, {"id": "p021", "ts": "8/16/2026 12:40", "name": "ราวิทย์ จัดดา", "nick": "ราวิทย์", "sid": "6938289521", "faculty": "วิศวะ", "ig": "ravitchadha", "year": "ปี 1", "likes": "ชอบร้องเพลง , ตีแบต , ปิงปอง", "msg1": "👋👋", "msg2": "👋👋", "status": "เข้าแล้วครับนาย"}, {"id": "p022", "ts": "8/16/2026 13:00", "name": "พรรณภัทร นาคทองแก้ว", "nick": "น้ำอิง", "sid": "6932185821", "faculty": "วิศวกรรมศาตร์", "ig": "n.pxnpxt", "year": "ปี 1", "likes": "ชอบกินขนมม ร้องเกะ ตีแบด เล่นเกม", "msg1": "เรื่องรถชนที่ยังไม่ได้รับคำขอโทษ (เก็บไว้บอกตอนเจอกัน)", "msg2": "เรื่องรถชนที่ยังไม่ได้รับคำขอโทษ (เก็บไว้บอกตอนเจอกัน)", "status": "เข้าแล้วครับนาย"}, {"id": "p023", "ts": "8/16/2026 13:01", "name": "วิชัยวัฒน์ คุณทรัพย์", "nick": "เกน", "sid": "6933241421", "faculty": "วิศวกรรมศาสตร์", "ig": "gain._.vichaiwat", "year": "ปี 1", "likes": "เกม ของกิน", "msg1": "คุยได้ไม่กัด", "msg2": "คุยได้ไม่กัด", "status": "เข้าแล้วครับนาย"}, {"id": "p024", "ts": "8/16/2026 15:11", "name": "ณิชมาศ โรจนอนันต์", "nick": "นินิม", "sid": "6938516021", "faculty": "วิศวกรรมศาสตร์", "ig": "nino_ninim", "year": "ปี 1", "likes": "Spiderman", "msg1": "ยินดีที่ได้รจน้า", "msg2": "เลิฟยุว", "status": "เข้าแล้วครับนาย"}, {"id": "p025", "ts": "8/16/2026 15:36", "name": "ธีรดลยา บุญทรง", "nick": "จินจิน", "sid": "6940110434", "faculty": "นิติศาสตร์", "ig": "Bearee_82_", "year": "ปี 1", "likes": "บัตเตอร์ต็อก, เค้ก", "msg1": "หาชั้นให้เจอสิ อิๆๆๆ หุๆๆๆๆ ฮิ้ๆๆๆๆๆ", "msg2": "เห้ยยย บัดเด้อเราหรอเนี่ยยย ><", "status": "ขะละเพเค้า"}, {"id": "p026", "ts": "8/16/2026 17:08", "name": "บุษชญา พลวรานนท์", "nick": "จูจุ๊บ", "sid": "6938070425", "faculty": "สถาปัตยกรรม", "ig": "Joop.ssss", "year": "ปี 1", "likes": "เทียน", "msg1": "โจ้ะเด้ะๆเจ้ะโด้ะๆ", "msg2": "🦅🦅🦅🦅🦅", "status": "เข้าแล้วครับนาย"}, {"id": "p027", "ts": "8/16/2026 17:12", "name": "ปริญญา สังขศิลา", "nick": "เก้า", "sid": "6933021223", "faculty": "วิทยาศาสตร์", "ig": "pellennor", "year": "ปี 1", "likes": "ทาร์ตไข่, เกม, ยิงธนู", "msg1": "ทักมาคุยเล่นได้นะ 🙂", "msg2": "ทักมาคุยเล่นได้นะ 🙂", "status": "เข้าแล้วครับนาย"}, {"id": "p028", "ts": "8/16/2026 21:03", "name": "คุณภัทร ชัชวาลย์", "nick": "ปริ๊น", "sid": "6931027530", "faculty": "แพทย์", "ig": "p1nc3y", "year": "ปี 1", "likes": "ชาบู", "msg1": "🚳", "msg2": "🚳", "status": "เข้าแล้วครับนาย"}, {"id": "p029", "ts": "8/16/2026 21:29", "name": "พสิษฐ์ตา จันทร์เดือน", "nick": "แพท", "sid": "6938530721", "faculty": "วิศวะ", "ig": "ppas.tta", "year": "ปี 1", "likes": "ชอบกิน กับฟังเพลง", "msg1": "เราจะพยายามเทคให้ดีที่สุดเลยนะจ๊ะะะะ", "msg2": "เราเลี้ยงง่ายมากก ขอแค่ของกินก็มีความสุขแล้ว😂", "status": "ขะละเพเค้า"}, {"id": "p030", "ts": "8/16/2026 22:18", "name": "ชินพรรธน์ เอกวราไพศาลกุล", "nick": "ชินจิ", "sid": "6931503521", "faculty": "วิศวะ", "ig": "_sinnapt", "year": "ปี 1", "likes": "โปรตีน", "msg1": "ดีครับ", "msg2": "ดีครับ", "status": "เข้าแล้วครับนาย"}, {"id": "p031", "ts": "8/17/2026 1:26", "name": "ภานุพงษ์ ทองพอก", "nick": "ปาล์ม", "sid": "6933205921", "faculty": "CEDT", "ig": "Tarfmissl", "year": "ปี 1", "likes": "ทุกอย่างที่บัดเดอร์ให้ครับ😋", "msg1": "ชีวิตอาจจะไม่ค่อยเหงาหน่อยนะเพื่อนเป็นบัดดี้เรา", "msg2": "ชวนคุยเยอะๆนะเพื่อน พอดีขี้เหงา", "status": "ขะละเพเค้า"}, {"id": "p032", "ts": "8/17/2026 1:51", "name": "พีรณัฐ ชื่นชมรัตน์", "nick": "ร้อก", "sid": "6842040824", "faculty": "รัดสาด", "ig": "sshammrockk", "year": "ปี 2", "likes": "เอฟเวอร์ตัน", "msg1": "ถึงร้ายก็รักนะเกเรอย่างไรก็รักนะ", "msg2": "งั้นผู้ชายดีๆคงมีแต่ในนิยาย", "status": "เข้าแล้วครับนาย"}, {"id": "p033", "ts": "8/17/2026 1:53", "name": "ทัตเทพ รัตนบุรี", "nick": "เจเดย์", "sid": "6933103521", "faculty": "วิศวกรรมศาสตร์", "ig": "jj_jayerr", "year": "ปี 1", "likes": "ชอบสีดำ/ชมพู, โออิชิ, นอน, กิน(ยกเว้นทุเรียนกับปลาร้า), กีฬา, เพลง, โดเรม่อน", "msg1": "เทคด้วยใจ รับไปเถอะ😌😌", "msg2": "ง่ายๆชิวๆบราซิลสไตล์ รักนะครับ ขอบคุณที่เทคกันน🤤", "status": "เข้าแล้วครับนาย"}, {"id": "p034", "ts": "8/17/2026 9:01", "name": "นันท์นภัส เคียงธนสมบัติ", "nick": "โดนัท", "sid": "6840115322", "faculty": "อักษรศาสตร์", "ig": "dinut_203", "year": "ปี 2", "likes": "ชาไทยชาตรามือ คนชนเทพ แอนด์เบิ้ตช้าตคับ😔🫶🏻", "msg1": "แอมวอชชิ่งยูว👀", "msg2": "ฝากตัวด้วยน้าาา🫪", "status": "ขะละเพเค้า"}, {"id": "p035", "ts": "8/17/2026 18:31", "name": "ภูวดล รัตนศรีทอง", "nick": "ภูมิ", "sid": "6931704321", "faculty": "วิศวกรรมศาสตร์", "ig": "poom.poowadon", "year": "ปี 1", "likes": "อะไรก็ได้ที่มีเนื้อวัวเยอะๆ หรือของกินไขมันน้อย", "msg1": "🥳🎉🎊👏 welcome เน้ออ", "msg2": "ขอบคุณที่เทคล่วงหน้าน้าาา หวังว่าจะได้รู้จักกันมากขึ้นนะ ^^", "status": "เข้าแล้วครับนาย"}, {"id": "p036", "ts": "8/17/2026 22:54", "name": "ธนัตถ์บดี ช่างสลัก", "nick": "อิคคิว", "sid": "6930115521", "faculty": "วิศวกรรม", "ig": "q.apxx._", "year": "ปี 1", "likes": "ชอบช็อคโกแลต ออกกำลังกาย ทำกิจกรรมแอคทีฟ", "msg1": "ขอให้โชคดี", "msg2": "ใครอะ", "status": "เข้าแล้วครับนาย"}, {"id": "p037", "ts": "8/18/2026 1:05", "name": "ปวิชญา ทาสัน", "nick": "อั้ม", "sid": "6733016737", "faculty": "สหเวชศาสตร์", "ig": "aum_pawichaya", "year": "ปี 3", "likes": "ชอบดูหนัง ชอบเที่ยว ชอบกินมัทฉะ", "msg1": "โหลๆๆอยากกินอารายย ถามเฉยๆ ห้ะ", "msg2": "สวัสดีค่า ฝากเนื้อฝากตัวด้วยนะคะ เราเลี้ยงง่ายมาก", "status": "เข้าแล้วครับนาย"}, {"id": "p038", "ts": "8/18/2026 23:20", "name": "กฤติน ตระกูลจินดารัตน์", "nick": "ตินติน", "sid": "6733011221", "faculty": "วิศวกรรมศาสตร์", "ig": "tintinnkt", "year": "ปี 3", "likes": "ชานม, องุ่น, การนอน", "msg1": "คนที่แวะมาซ้อมเต้นบ่อยๆ 👀", "msg2": "อยากกินชานมมมม 🤩, อะไรก็ได้แหละ", "status": "เข้าแล้วครับนาย"}, {"id": "p039", "ts": "8/18/2026 23:22", "name": "ศศิณิช์ภา วสุนิรชร", "nick": "เอมี่", "sid": "6938248323", "faculty": "วิทยาศาสตร์ (BSAC)", "ig": "0701._snpv", "year": "ปี 1", "likes": "Classical/Rock/Jazz music, Basketball, Yoguruto", "msg1": "อย่าลืมกินนมให้ครบ8ชั่วโมง ดื่มอาหารให้ครบ5แก้ว 💪😼😍", "msg2": "โยกุรุโตะปีโป้หวาน3อร่อยมาก ต้องหากินนะ😗", "status": "เข้าแล้วครับนาย"}, {"id": "p040", "ts": "8/18/2026 23:23", "name": "กมลพรรณ รัชชุศิริ", "nick": "เอมมี่", "sid": "6930002325", "faculty": "สถาปัตยกรรม", "ig": "ammyammys", "year": "ปี 1", "likes": "Kamu Sushiro", "msg1": "sawaddee ;p", "msg2": "sawaddee", "status": "เข้าแล้วครับนาย"}, {"id": "p041", "ts": "8/19/2026 0:48", "name": "คุณภัทร ชัขวาลย์", "nick": "ปริ๊น", "sid": "6931027530", "faculty": "แพทย์", "ig": "p1nc3y", "year": "ปี 1", "likes": "ปลากระเบนผัดตุ๊กแกเพิ่มไข่คางคก", "msg1": "🚳", "msg2": "🚳", "status": "เข้าแล้วครับนาย"}, {"id": "p042", "ts": "8/19/2026 1:09", "name": "ณพจน์สกร ภูประทาน", "nick": "กัญจน์", "sid": "6932068021", "faculty": "วิศวกรรมศาสตร์", "ig": "Kan_kan11511", "year": "ปี 1", "likes": "ชอบของฟรี", "msg1": "ขอเงินหน่อยครับ", "msg2": "ขอเงินหน่อยครับ", "status": "เข้าแล้วครับนาย"}, {"id": "p043", "ts": "8/19/2026 10:01", "name": "ณิชารัศม์ จิรวิริยะสิริ", "nick": "กอบัว", "sid": "6930045325", "faculty": "สถาปัตย์", "ig": "dearsolace_", "year": "ปี 1", "likes": "ชานมไข่มุก, หนังสือ", "msg1": "กลางวันแดดมันแรงค่ะ", "msg2": "เจอแน่", "status": "เข้าแล้วครับนาย"}, {"id": "p044", "ts": "8/19/2026 10:09", "name": "ปุณวัสส์ โชติธนะจิรพงษ์", "nick": "ลาเต้", "sid": "6930187721", "faculty": "วิศวกรรมศาสตร์", "ig": "_tetaepn_", "year": "ปี 1", "likes": "กิน เล่นกีฬา เล่นเกม ฟังเพลง ดูหนัง ดูเมะ", "msg1": "หวัดดีีี", "msg2": "หวัดดีีี", "status": "เข้าแล้วครับนาย"}, {"id": "p045", "ts": "8/19/2026 11:23", "name": "ปัญญพัฒน์ แก้วสุวรรณ", "nick": "เซม", "sid": "6940059628", "faculty": "นิเทศศาสตร์", "ig": "same.pk00", "year": "ปี 1", "likes": "กีฬา ดูหนัง ฟังเพลง เล่นเกม กินได้ทุกอย่าง", "msg1": "อยากกินไร ว่ามา", "msg2": "อยากกินขนม", "status": "เข้าแล้วครับนาย"}, {"id": "p046", "ts": "8/19/2026 12:32", "name": "ภาสพงศ์ นาราคราม", "nick": "ปลื้ม", "sid": "6931904521", "faculty": "วอศวกรรมศาสตร์", "ig": "pa_sp_on_g", "year": "ปี 1", "likes": "ขนมกรุบกรอบ ช็อกโกแลต", "msg1": "ยินดีที่ได้รู้จักก เตรียมกินหนมได้เลยย", "msg2": "ยินดีที่ได้รุ้จักนะ ฝากตัวด้วยนะคับ", "status": "เข้าแล้วครับนาย"}, {"id": "p047", "ts": "8/19/2026 13:48", "name": "ปภัสร์สินี สิริมังคลกิตติ", "nick": "มุก", "sid": "6838060025", "faculty": "สถาปัตยกรรม", "ig": "mee_klook", "year": "ปี 2", "likes": "ขนมกับสติ๊กเกอร์งับ", "msg1": "มีแต่ใจให้ไปไม่คิดอะไร", "msg2": "ไม่ได้คาดหวังแค่ตั้งตารอ รักน้าา🫰🏻", "status": "เข้าแล้วครับนาย"}, {"id": "p048", "ts": "8/19/2026 17:03", "name": "กุลนิษฐ์ บุญศรี", "nick": "แก้ม", "sid": "6741118727", "faculty": "ครุศาสตร์", "ig": "g_gamm._", "year": "ปี 3", "likes": "เธอ", "msg1": "พรหมลิขิตบันดาลชักพา ดลให้มาพบกันทันใด", "msg2": "คนที่โทรผิดมาเมื่อวานตอนเช้า ใช่หรือเปล่า", "status": "เข้าแล้วครับนาย"}, {"id": "p049", "ts": "8/19/2026 18:11", "name": "เธียร วรเมธกุล", "nick": "เธียร", "sid": "6840046328", "faculty": "นิเทศ", "ig": "i.amtv", "year": "ปี 2", "likes": "หลายอย่างง", "msg1": "วีดัด", "msg2": "ไม่กินเผ็ด", "status": "เข้าแล้วครับนาย"}, {"id": "p050", "ts": "8/20/2026 11:20", "name": "นรีกานต์ ฟองงาม", "nick": "ใบบัว", "sid": "6940116234", "faculty": "นิติศาสตร์", "ig": "jiyuuninarikan", "year": "ปี 1", "likes": "ชานมไข่มุก ขนมอะไรก็ได้", "msg1": "ชอบอะไรบอกได้ ไม่ต้องเกรงใจ😚😚", "msg2": "ขอกินชานมทุกวัน😌😌 (ล้อเล่น)", "status": "ขะละเพเค้า"}, {"id": "p051", "ts": "8/20/2026 12:28", "name": "ฐิติพันธุ์ คณานุรักษ์", "nick": "ปาล์ม", "sid": "6630068421", "faculty": "วิดวะ", "ig": "p.lmmz", "year": "ปี 4", "likes": "ช้อกโกแลต กาแฟเปรี้ยว น้ำหวาน", "msg1": "สวัสดีๆๆ", "msg2": "สวัสดีๆๆๆ", "status": "เข้าแล้วครับนาย"}, {"id": "p052", "ts": "8/20/2026 18:46", "name": "วิชญาดา แซ่แต้", "nick": "แจ่มใส", "sid": "6942322727", "faculty": "ครุศาสตร์", "ig": "todayisjamsai", "year": "ปี 1", "likes": "แมว คนสวย มัทฉะลาเต้ ชานมไข่มุก บราวนี่ ขนมหวาน", "msg1": "ถ้าคิดถึงให้ทำปากจู๋วส์😘", "msg2": "หนูนิดไม่อยากไปโรงเรียน", "status": "เข้าแล้วครับนาย"}, {"id": "p053", "ts": "8/20/2026 19:01", "name": "ธนกร ปทุมนากุล", "nick": "ย้ง", "sid": "6938133221", "faculty": "วิศวกรรมศาสตร์", "ig": "Catalyst.yss", "year": "ปี 1", "likes": "Hololive, เกม", "msg1": ":D", "msg2": "จะให้อะไรก็ได้เลย ตามใจชอบ", "status": "เข้าแล้วครับนาย"}, {"id": "p054", "ts": "8/20/2026 19:44", "name": "พิมพิศา ปะหน้าประโคน", "nick": "พิม", "sid": "6932195021", "faculty": "วิศวกรรมศาสตร์", "ig": "_w1d.x", "year": "ปี 1", "likes": "ของหวาน", "msg1": "ม่ายมีตังค่า", "msg2": "ที่ชั้นเจ้าชู้เพราะอยากเจอเนื้อคู่เร็วๆ ><", "status": "เข้าแล้วครับนาย"}, {"id": "p055", "ts": "8/21/2026 0:36", "name": "จิรายุ เจริญไทย", "nick": "เดียว", "sid": "6933042921", "faculty": "วิศวกรรมศาสตร์", "ig": "deaw.zaza.7", "year": "ปี 1", "likes": "ชาบู ของหวาน", "msg1": "สู้ๆ นะครับ", "msg2": "ขอของกินหน่อย🤲", "status": "เข้าแล้วครับนาย"}, {"id": "p056", "ts": "8/21/2026 8:50", "name": "พลภูมิ วงษ์วิไลวารินทร์", "nick": "ภูมิใจ", "sid": "6938529121", "faculty": "วิศวะเคมี", "ig": "Poomjai-sq", "year": "ปี 1", "likes": "ของกิน", "msg1": "อิอิ", "msg2": "อุอุ", "status": "เข้าแล้วครับนาย"}, {"id": "p057", "ts": "8/21/2026 18:44", "name": "วีรปริยา รัตนบุรี", "nick": "เอม", "sid": "6940225822", "faculty": "อักษรศาสตร์", "ig": "sou.ntme", "year": "ปี 1", "likes": "ขนมปัง yume pan อาหารประเภทเส้น ก๋วยเตี๋ยว ราเมน อุด้ง", "msg1": "🦟🦟🥵🚨🤓", "msg2": "🦎🦎🙆🏻‍♀️🫪🫪", "status": "เข้าแล้วครับนาย"}, {"id": "p058", "ts": "8/21/2026 18:45", "name": "รัตนาภรณ์ กนกนทีสวัสดิ์", "nick": "ข้าวฟ่าง", "sid": "6940216334", "faculty": "นิติศาสตร์", "ig": "brizelle.pdf", "year": "ปี 1", "likes": "ดูไบชูวี่คุกกี้", "msg1": "รู้ใจรู้มือ", "msg2": "แคร์เสมอถึงไม่รู้ว่าใคร", "status": "เข้าแล้วครับนาย"}, {"id": "p059", "ts": "8/21/2026 19:03", "name": "ชวิศา เฮงสว่างภักดี", "nick": "อิงอิง", "sid": "6940035034", "faculty": "นิติศาสตร์", "ig": "inging_uui", "year": "ปี 1", "likes": "นิยาย ของหวาน อาหารญี่ปุ่น อิตาลี", "msg1": "เดี๋ยวเจอ", "msg2": "มาสนุกกันเถอะเพื่อนน", "status": "ขะละเพเค้า"}, {"id": "p060", "ts": "8/21/2026 19:21", "name": "ธนิตา ชัยพล", "nick": "แทน", "sid": "6848040322", "faculty": "อักษรศาสตร์ (BALAC)", "ig": "tinzcyp", "year": "ปี 2", "likes": "ขนม, ชาหวานน้อย (ชานม ชาเขียว อื่นๆ)", "msg1": "เจอแน่ๆๆๆ", "msg2": "อย่าให้ชั้นรู้🪿🕵️", "status": "เข้าแล้วครับนาย"}, {"id": "p061", "ts": "8/21/2026 19:38", "name": "สิปปการ แสนชัยชนะ", "nick": "ไทซาน", "sid": "6930309021", "faculty": "วิศวกรรมศาสตร์", "ig": "soonsity", "year": "ปี 1", "likes": "ฟังเพลง ปีนผา นอนกลางวัน กิน kamu dino", "msg1": "วัดซัป", "msg2": "Hello", "status": "เข้าแล้วครับนาย"}, {"id": "p062", "ts": "8/21/2026 20:23", "name": "สิภาสมุท บูรณศักดิ์", "nick": "โมจา", "sid": "6743064024", "faculty": "รัฐศาสตร์", "ig": "mojagabee_", "year": "ปี 3", "likes": "ชาจี ชาหอมหมื่นลี้", "msg1": "สวัสดีจ้า", "msg2": "ขอบคุณจ้า", "status": "เข้าแล้วครับนาย"}, {"id": "p063", "ts": "8/21/2026 21:33", "name": "พีรยา มูสิกอุปถัมภ์", "nick": "แพรวา", "sid": "6840069828", "faculty": "นิเทศ", "ig": "Favpersooyeonq", "year": "ปี 2", "likes": "หม่าล่า ก๋วยเตี๋ยวเรือ", "msg1": "67", "msg2": "67", "status": "เข้าแล้วครับนาย"}, {"id": "p064", "ts": "8/21/2026 21:34", "name": "ปรานต์ แซ่ตั้ง", "nick": "คินทาโร่", "sid": "6938193921", "faculty": "ICE", "ig": "kintaro54321", "year": "ปี 1", "likes": "Hololive/Vtuber", "msg1": "ยินดีที่ได้รู้จักครับ", "msg2": "ยินดีที่ได้รู้จักครับ", "status": "เข้าแล้วครับนาย"}, {"id": "p065", "ts": "8/21/2026 21:42", "name": "อี้ถิง ฟ่าน", "nick": "อี้", "sid": "6930060532", "faculty": "ทันตแพทยศาสตร์", "ig": "yi.fann_", "year": "ปี 1", "likes": "ได้หมด", "msg1": "อยากรู้จักแล้ว", "msg2": "อยากรู้จักแล้ว", "status": "เข้าแล้วครับนาย"}, {"id": "p066", "ts": "8/22/2026 1:22", "name": "เฌอร์มาลย์ สายวิลัย", "nick": "เบนซ์เซ่", "sid": "6931805021", "faculty": "วิศวกรรมศาสตร์", "ig": "benzezneb_", "year": "ปี 1", "likes": "โยกุรุโตะหวาน0%", "msg1": "ไว้เจอกันน้า จะเทคอย่างดีย์เรยย😋", "msg2": "ไว้เจอกันน้าา😚😚", "status": "เข้าแล้วครับนาย"}, {"id": "p067", "ts": "8/22/2026 11:07", "name": "ณภัทร จรรยาวัฒนานนท์", "nick": "ภอช", "sid": "6630072921", "faculty": "วิศวะ", "ig": "posh_napatr", "year": "ปี 4", "likes": "ของฟรีคับ🫪", "msg1": "เตรียมตัวรับของอร่อยแบบฉ่ำๆ", "msg2": "หวัดดีคับ ยินดีที่ได้รู้จัก☺️", "status": "เข้าแล้วครับนาย"}, {"id": "p068", "ts": "8/22/2026 11:59", "name": "เดชาธร เกริกชวลิตกุล", "nick": "ตะวัน", "sid": "6930086021", "faculty": "คณะวิศวกรรมศาสตร์", "ig": "t4w4n.__", "year": "ปี 1", "likes": "ช้อกโกแล้ตต", "msg1": "เราจ๊นจน", "msg2": "เลิฟยู", "status": "เข้าแล้วครับนาย"}, {"id": "p069", "ts": "8/22/2026 12:12", "name": "กษิตินาถ เตียวศิริชัยสกุล", "nick": "ตรอง", "sid": "6830004525", "faculty": "สถาปัตยกรรม", "ig": "kasitrong", "year": "ปี 2", "likes": "ช็อคโกแลต สีชมพุ กระต่าย", "msg1": "สวัสดีฮะ ฝากเนื้อฝากตัวด้วยย", "msg2": "ขอบคุนที่มาเทคเราน้า", "status": "เข้าแล้วครับนาย"}, {"id": "p070", "ts": "8/22/2026 12:31", "name": "วรันธร ทวีสุข", "nick": "มิวสิค", "sid": "6830106925", "faculty": "สถาปัตย์", "ig": "mcjkc6_", "year": "ปี 2", "likes": "ของหวานๆๆๆ", "msg1": "🔥🔥😵🆘", "msg2": "บัดเด้อช่วยด้วย", "status": "เข้าแล้วครับนาย"}, {"id": "p071", "ts": "8/22/2026 13:27", "name": "ศรัณย์พร สมพงษ์", "nick": "เฟรช", "sid": "6932237323", "faculty": "วิทยาศาสตร์", "ig": "srpfreshy", "year": "ปี 1", "likes": "baron's bar", "msg1": "หน้าตาไม่ค่อยสวยแต่ว่าลึกซึ้ง 🐖 เฮ้ย ใครปล่อยหมู", "msg2": "อยากให้มองฉันคนเดียว (ใบ้จากมิคาสะ AoT)", "status": "ขะละเพเค้า"}, {"id": "p072", "ts": "8/22/2026 13:37", "name": "บุญฑริกา เกียรติพาราวงศ์", "nick": "เนย", "sid": "6931232023", "faculty": "วิทยาศาสตร์", "ig": "__.rikahhh", "year": "ปี 1", "likes": "ของอร่อย", "msg1": "หวัดดี 😚", "msg2": "หวัดดี 😚", "status": "เข้าแล้วครับนาย"}, {"id": "p073", "ts": "8/22/2026 15:46", "name": "จิรัชยา เนียมหลวง", "nick": "เนย", "sid": "6731307721", "faculty": "วิศวกรรมศาสตร์", "ig": "noeyarine.j", "year": "ปี 3", "likes": "ของหวาน ชาไทย ขนม", "msg1": "จับให้ได้ ถ้านายแน่จริง", "msg2": "อย่าให้พี่รู้ ว่าเรารู้ ว่าพี่รู้ ว่าเรารู้ ว่าเธอคือใคร 🫵🏻", "status": "ขะละเพเค้า"}, {"id": "p074", "ts": "8/22/2026 16:02", "name": "ภาสวีร์ เพิ่มพูลทรัพย์", "nick": "วีร์", "sid": "6631532421", "faculty": "วิศวกรรมศาสตร์", "ig": "x_vvhale", "year": "ปี 4", "likes": "🧋🍵", "msg1": "ฝั่งใหญ่ ปีโต", "msg2": "เดือนก็ต้องเข้า ร้านเหล้าก็ห้ามพลาด🥴", "status": "เข้าแล้วครับนาย"}, {"id": "p075", "ts": "8/22/2026 16:41", "name": "ยามาโตะ ดีวงกิจ", "nick": "ยามาโตะ", "sid": "6932226921", "faculty": "วิศวะกรรมศาสตร์", "ig": "ymt__tmy", "year": "ปี 1", "likes": "gym, football", "msg1": "Hellooo!!", "msg2": "Hellooo!!", "status": "เข้าแล้วครับนาย"}, {"id": "p076", "ts": "8/22/2026 20:18", "name": "อัญชริก้า อริยารัตนำ", "nick": "ชิก้า", "sid": "6941262226", "faculty": "พาณิชยศาสตร์เเละการบัญชี", "ig": "aa_shiika", "year": "ปี 1", "likes": "สีเหลือง มาสคอตน่ารักๆ ขนมปัง", "msg1": "ถึงเราไม่มีตังเปย์เเต่เรามีตัวเเละหัวใจให้เธอเสมอ♥️", "msg2": "เทคอะไรเราได้หมดเลยย ชอบเซอร์ไพรส์ มาคุยกันเยอะๆนะ♥️", "status": "ขะละเพเค้า"}, {"id": "p077", "ts": "8/22/2026 22:09", "name": "มนัสนันท์ ลีวณิชย์", "nick": "เอมี่", "sid": "6743049624", "faculty": "รัฐศาสตร์", "ig": "amymnsn", "year": "ปี 3", "likes": "มัทฉะ ขนมพวกช็อกโกแลต แมว ของกุ๊กกิ๊กน่ารักๆ", "msg1": "อยากได้อะไรบอกมาา พร้อมไปหามาให้เสมอ ิิ😌", "msg2": "รักบัดเด้อน้าา ขอขนมเยอะๆๆ(หยอก😋)", "status": "ขะละเพเค้า"}, {"id": "p078", "ts": "8/22/2026 23:37", "name": "ณฐธรรมวงศ์ หลีวิจิตร", "nick": "หลี", "sid": "6930064121", "faculty": "วิศวกรรมศาสตร์", "ig": "natha._.lee", "year": "ปี 1", "likes": "ของฟรี ข้าวฟรีก็ดี", "msg1": "โปรดใจดีกับฉัน", "msg2": "พาไปเลี้ยงข้าวหน่อย", "status": "เข้าแล้วครับนาย"}, {"id": "p079", "ts": "8/23/2026 2:31", "name": "บุณณ์ดา พานิชกุล", "nick": "แน่", "sid": "6633132421", "faculty": "วิศวะ", "ig": "0n_theb", "year": "ปี 4", "likes": "ช้อคโกแลต, เป็ด", "msg1": "ใช่แน่ๆ", "msg2": "ใช่รึป่าว", "status": "เข้าแล้วครับนาย"}, {"id": "p080", "ts": "8/23/2026 3:07", "name": "กฤตศาสตร์ กาญจนรัชต์", "nick": "ดีเทล", "sid": "6730004425", "faculty": "สถาปัตยกรรม", "ig": "Krittasart", "year": "ปี 3", "likes": "ชอบกินกาแฟมากๆ ถ้าชอบที่สุดก็ลาเต้", "msg1": "เราเป็นคนนอนดึก งานล้น เสมอต้นเสมอปลาย อยากกินอะไรบอกได้เลยเด้อ (อย่าแพงมากสูตังหมดแล่ว)", "msg2": "หิวหิวหิว ทักมาเยอะๆมาเลี้ยงเยอะๆด้วยน้า", "status": "เข้าแล้วครับนาย"}, {"id": "p081", "ts": "8/23/2026 12:35", "name": "ขณิฐล์กานต์ เทพธาราทิพย์", "nick": "แอลฟี่", "sid": "6930010325", "faculty": "สถาปัตย์", "ig": "Calledelfie", "year": "ปี 1", "likes": "เบเกอรี่ ไอติมโยเกิร์ต กรีกโยเกิร์ต กัมมี่เอเนอจี้สีม่วง", "msg1": "เตเรเร่ตาลาล่ากินมาม่าอยู่หน้าเซเว่น", "msg2": "ชวนเราคุยบ่อยๆไม่กัดพร้อมตอบ แต่ถ้าไม่ตอบคือเดือดงานน่ะ^^", "status": "ขะละเพเค้า"}];
+// รหัสผ่านแอดมิน 2 ระดับ (นี่เป็นการป้องกันแบบพื้นฐานฝั่ง browser เท่านั้น ไม่ใช่ระบบความปลอดภัยจริงจัง)
+const ADMIN_PASSCODE_FULL = "huesapragrapong";    // เห็น + ใช้งานระบบล็อกคู่ได้
+const ADMIN_PASSCODE_LIMITED = "manyagatong34";   // เข้าแอดมินได้ แต่ไม่เห็นระบบล็อกคู่
+let adminLevel = null; // 'full' | 'limited'
+
+let participants = [];
+let pairs = []; // array of arrays of ids
+let lockedPairs = []; // array of [idA, idB] — fixed, excluded from random shuffle
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// Randomly pairs up a plain list of ids (no locks involved). Odd leftover becomes a trio.
+function randomGroupsOf(ids){
+  const shuffled = shuffle(ids);
+  const result = [];
+  let i = 0;
+  while(i < shuffled.length){
+    const remaining = shuffled.length - i;
+    if(remaining === 3){
+      result.push([shuffled[i], shuffled[i+1], shuffled[i+2]]);
+      i += 3;
+    } else if (remaining === 1){
+      // stray single person (only happens if locks left an odd remainder) — attach to last group
+      if(result.length){ result[result.length-1] = result[result.length-1].concat(shuffled[i]); }
+      else { result.push([shuffled[i]]); }
+      i += 1;
+    } else {
+      result.push([shuffled[i], shuffled[i+1]]);
+      i += 2;
+    }
+  }
+  return result;
+}
+
+// Combines fixed locked groups with a fresh random shuffle of everyone else.
+function makePairs(list, locks){
+  locks = locks || [];
+  const lockedIds = new Set(locks.flat());
+  const remainingIds = list.map(p=>p.id).filter(id=>!lockedIds.has(id));
+  const randomGroups = randomGroupsOf(remainingIds);
+  return [...locks.map(g=>g.slice()), ...randomGroups];
+}
+
+/* =========================================================================
+   DATA LAYER — Firebase Firestore
+   ต้องตั้งค่า FIREBASE_CONFIG ด้านบนของไฟล์นี้ก่อนใช้งาน (ดูคำแนะนำในคอมเมนต์)
+   ========================================================================= */
+const FS_COLLECTION = "jodeh34_data";
+let db = null;
+function getDb(){
+  if(!db){
+    if(!window.firebase || !FIREBASE_CONFIG.apiKey){
+      throw new Error("ยังไม่ได้ตั้งค่า Firebase — กรุณาใส่ FIREBASE_CONFIG ด้านบนของไฟล์");
+    }
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  }
+  return db;
+}
+async function fsGet(key){
+  const snap = await getDb().collection(FS_COLLECTION).doc(key).get();
+  if(!snap.exists) throw new Error("not found");
+  return snap.data().value;
+}
+async function fsSet(key, value){
+  await getDb().collection(FS_COLLECTION).doc(key).set({ value, updatedAt: Date.now() });
+}
+
+async function loadState(){
+  try{
+    participants = JSON.parse(await fsGet('participants'));
+  }catch(e){
+    participants = SEED_DATA.slice();
+    await fsSet('participants', JSON.stringify(participants));
+  }
+  try{
+    lockedPairs = JSON.parse(await fsGet('locked'));
+  }catch(e){
+    lockedPairs = [];
+    await fsSet('locked', JSON.stringify(lockedPairs));
+  }
+  try{
+    pairs = JSON.parse(await fsGet('pairs'));
+  }catch(e){
+    pairs = makePairs(participants, lockedPairs);
+    await fsSet('pairs', JSON.stringify(pairs));
+  }
+}
+
+async function saveParticipants(){ await fsSet('participants', JSON.stringify(participants)); }
+async function saveLocked(){ await fsSet('locked', JSON.stringify(lockedPairs)); }
+async function recomputePairs(){
+  pairs = makePairs(participants, lockedPairs);
+  await savePairs();
+}
+async function savePairs(){ await fsSet('pairs', JSON.stringify(pairs)); }
+
+function findPersonById(id){
+  return participants.find(p=>p.id===id);
+}
+function pairGroupOf(id){
+  return pairs.find(g=>g.includes(id));
+}
+function partnersOf(id){
+  const g = pairGroupOf(id);
+  if(!g) return [];
+  return g.filter(x=>x!==id).map(findPersonById).filter(Boolean);
+}
+
+/* ---------------- View switching ---------------- */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  if(name === 'list') renderList();
+}
+
+document.getElementById('openAdminBtn').addEventListener('click', ()=> showView('admin'));
+document.getElementById('backToSearchBtn').addEventListener('click', ()=> showView('search'));
+document.getElementById('backToAdminBtn').addEventListener('click', ()=> showView('admin'));
+document.getElementById('viewListBtn').addEventListener('click', ()=> showView('list'));
+
+/* ---------------- Search view ---------------- */
+function normalize(s){ return (s||'').toString().toLowerCase().trim(); }
+
+function doSearch(){
+  const q = normalize(document.getElementById('searchInput').value);
+  const listEl = document.getElementById('matchList');
+  const ticketEl = document.getElementById('ticketArea');
+  ticketEl.innerHTML = '';
+  listEl.innerHTML = '';
+  if(!q){ return; }
+  const results = participants.filter(p=>
+    normalize(p.name).includes(q) || normalize(p.nick).includes(q) || normalize(p.sid).includes(q)
+  );
+  if(results.length === 0){
+    listEl.innerHTML = '<div class="empty-note">ไม่พบชื่อนี้ในระบบ ลองพิมพ์ชื่อ ชื่อเล่น หรือรหัสนิสิตใหม่อีกครั้ง</div>';
+    return;
+  }
+  if(results.length === 1){
+    showTicket(results[0].id);
+    return;
+  }
+  results.slice(0,8).forEach(p=>{
+    const div = document.createElement('div');
+    div.className = 'match-item';
+    div.innerHTML = `<div><div class="nm">${escapeHtml(p.name)} (${escapeHtml(p.nick)})</div><div class="sub">${escapeHtml(p.faculty)} · ${escapeHtml(p.year)}</div></div><div class="sub">${escapeHtml(p.sid)}</div>`;
+    div.addEventListener('click', ()=> showTicket(p.id));
+    listEl.appendChild(div);
+  });
+}
+
+function escapeHtml(s){
+  return (s||'').toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function chipList(str){
+  if(!str) return '';
+  return str.split(/[,\/]/).map(s=>s.trim()).filter(Boolean).slice(0,8)
+    .map(s=>`<span class="chip">${escapeHtml(s)}</span>`).join('');
+}
+
+function showTicket(meId){
+  const me = findPersonById(meId);
+  const others = partnersOf(meId);
+  const ticketEl = document.getElementById('ticketArea');
+  document.getElementById('matchList').innerHTML = '';
+  document.getElementById('searchInput').value = me.name;
+
+  if(others.length === 0){
+    ticketEl.innerHTML = `<div class="ticket"><div class="ticket-top"><div class="kicker">Hi, ${escapeHtml(me.nick)}</div><div class="who">${escapeHtml(me.name)}</div></div><div class="perf"></div><div class="ticket-bottom"><div class="empty-note">ยังไม่ได้จับคู่ให้ตอนนี้ รอแอดมินสุ่มจับคู่นะ</div></div></div>`;
+    return;
+  }
+
+  const buddyBlocks = others.map(b => `
+    <div class="buddy-name">${escapeHtml(b.name)} <span style="color:var(--muted); font-weight:400; font-size:16px;">(${escapeHtml(b.nick)})</span></div>
+    <div class="buddy-meta">${escapeHtml(b.faculty)} · ${escapeHtml(b.year)} · ${escapeHtml(b.sid)}</div>
+    ${b.ig ? `<div class="ig-tag">📸 @${escapeHtml(b.ig.replace('@',''))}</div>` : ''}
+    <div class="chips">${chipList(b.likes)}</div>
+    ${b.msg2 ? `<div class="msgbox"><div class="lbl">สิ่งที่เขาอยากบอกคุณ</div>${escapeHtml(b.msg2)}</div>` : ''}
+  `).join('<div style="height:16px;"></div>');
+
+  ticketEl.innerHTML = `
+    <div class="ticket">
+      <div class="ticket-top">
+        <div class="kicker">This is your buddy card</div>
+        <div class="who">${escapeHtml(me.name)} (${escapeHtml(me.nick)})</div>
+        ${me.msg1 ? `<div class="msgbox" style="margin-top:10px;"><div class="lbl">สิ่งที่คุณอยากบอกบัดดี้</div>${escapeHtml(me.msg1)}</div>` : ''}
+      </div>
+      <div class="perf"></div>
+      <div class="ticket-bottom">
+        <div class="kicker" style="margin-bottom:6px;">${others.length>1?'บัดดี้ของคุณคือ':'บัดดี้ของคุณคือ'}</div>
+        ${buddyBlocks}
+        ${others.length>1?'<div class="trio-note">กลุ่มนี้มี 3 คนจับคู่ด้วยกัน เพราะจำนวนคนไม่ลงตัวพอดี 🙌</div>':''}
+      </div>
+    </div>`;
+}
+
+document.getElementById('searchBtn').addEventListener('click', doSearch);
+document.getElementById('searchInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+
+/* ---------------- List view ---------------- */
+function renderList(){
+  const grid = document.getElementById('pairsGrid');
+  const stats = document.getElementById('listStats');
+  stats.innerHTML = `<div class="stat"><b>${participants.length}</b>คนทั้งหมด</div><div class="stat"><b>${pairs.length}</b>คู่/กลุ่ม</div>`;
+  grid.innerHTML = '';
+  pairs.forEach((g, idx)=>{
+    const people = g.map(findPersonById).filter(Boolean);
+    const card = document.createElement('div');
+    card.className = 'pair-card';
+    const rows = people.map(p=>`<div class="row">${escapeHtml(p.name)} <span style="color:var(--muted); font-weight:400; font-size:12.5px;">(${escapeHtml(p.nick)})</span></div>`).join('<div class="row" style="justify-content:center;"><span class="cross">×</span></div>');
+    card.innerHTML = `<div class="idx">GROUP ${String(idx+1).padStart(2,'0')}</div>${rows}`;
+    grid.appendChild(card);
+  });
+}
+
+/* ---------------- Admin ---------------- */
+document.getElementById('adminUnlock').addEventListener('click', ()=>{
+  const val = document.getElementById('adminPass').value;
+  if(val === ADMIN_PASSCODE_FULL){
+    adminLevel = 'full';
+  } else if(val === ADMIN_PASSCODE_LIMITED){
+    adminLevel = 'limited';
+  } else {
+    adminLevel = null;
+  }
+  if(adminLevel){
+    document.getElementById('adminGate').style.display = 'none';
+    document.getElementById('adminPanel').classList.add('active');
+    document.getElementById('lockForm').style.display = (adminLevel === 'full') ? 'grid' : 'none';
+    renderAdmin();
+    if(adminLevel === 'full') renderLockUI();
+  } else {
+    document.getElementById('adminErr').textContent = 'รหัสผ่านไม่ถูกต้อง';
+  }
+});
+document.getElementById('adminPass').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('adminUnlock').click(); });
+
+function isLocked(id){
+  return lockedPairs.some(g=>g.includes(id));
+}
+
+function renderAdmin(){
+  const stats = document.getElementById('adminStats');
+  const lockStat = (adminLevel === 'full') ? `<div class="stat"><b>${lockedPairs.length}</b>คู่ที่ล็อกไว้</div>` : '';
+  stats.innerHTML = `<div class="stat"><b>${participants.length}</b>รายชื่อทั้งหมด</div><div class="stat"><b>${pairs.length}</b>คู่/กลุ่มปัจจุบัน</div>${lockStat}`;
+  const tbody = document.getElementById('adminTbody');
+  tbody.innerHTML = '';
+  participants.forEach(p=>{
+    const partners = partnersOf(p.id).map(x=>x.nick).join(', ') || '—';
+    const lockTag = (adminLevel === 'full' && isLocked(p.id)) ? ' 🔒' : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(p.name)}</td>
+      <td>${escapeHtml(p.nick)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;">${escapeHtml(p.sid)}</td>
+      <td>${escapeHtml(p.faculty)}</td>
+      <td>${escapeHtml(p.year)}</td>
+      <td>${escapeHtml(partners)}${lockTag}</td>
+      <td><button class="btn small" data-del="${p.id}">ลบ</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.del;
+      const person = findPersonById(id);
+      if(!confirm(`ลบ "${person.name}" ออกจากระบบ? การจับคู่และการล็อกของคนนี้จะถูกล้างไปด้วย`)) return;
+      participants = participants.filter(p=>p.id!==id);
+      lockedPairs = lockedPairs.filter(g=>!g.includes(id));
+      await saveParticipants();
+      await saveLocked();
+      await recomputePairs();
+      renderAdmin();
+      if(adminLevel === 'full') renderLockUI();
+      toast('ลบรายชื่อแล้ว');
+    });
+  });
+}
+
+function renderLockUI(){
+  const selA = document.getElementById('lock_a');
+  const selB = document.getElementById('lock_b');
+  const options = participants.map(p=>`<option value="${p.id}">${escapeHtml(p.name)} (${escapeHtml(p.nick)})</option>`).join('');
+  selA.innerHTML = options;
+  selB.innerHTML = options;
+
+  const listEl = document.getElementById('lockedList');
+  if(lockedPairs.length === 0){
+    listEl.innerHTML = '<div style="color:var(--muted); font-size:13px;">ยังไม่มีคู่ที่ล็อกไว้</div>';
+  } else {
+    listEl.innerHTML = lockedPairs.map((g, idx)=>{
+      const names = g.map(id=>{ const p = findPersonById(id); return p ? p.nick : '?'; }).join(' <span class="cross">×</span> ');
+      return `<div class="locked-row"><div class="names">🔒 ${names}</div><button class="btn small" data-unlock="${idx}">ปลดล็อก</button></div>`;
+    }).join('');
+    listEl.querySelectorAll('[data-unlock]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const idx = parseInt(btn.dataset.unlock, 10);
+        lockedPairs.splice(idx, 1);
+        await saveLocked();
+        await recomputePairs();
+        renderAdmin();
+        renderLockUI();
+        toast('ปลดล็อกแล้ว — จับคู่คนที่เหลือใหม่เรียบร้อย');
+      });
+    });
+  }
+}
+
+document.getElementById('lockBtn').addEventListener('click', async ()=>{
+  const idA = document.getElementById('lock_a').value;
+  const idB = document.getElementById('lock_b').value;
+  if(!idA || !idB || idA === idB){ toast('กรุณาเลือก 2 คนที่ไม่ซ้ำกัน'); return; }
+  // remove either person from any existing lock first
+  lockedPairs = lockedPairs.filter(g=>!g.includes(idA) && !g.includes(idB));
+  lockedPairs.push([idA, idB]);
+  await saveLocked();
+  await recomputePairs();
+  renderAdmin();
+  renderLockUI();
+  const pa = findPersonById(idA), pb = findPersonById(idB);
+  toast(`ล็อก ${pa.nick} × ${pb.nick} แล้ว 🔒`);
+});
+
+document.getElementById('shuffleBtn').addEventListener('click', async ()=>{
+  if(!confirm('สุ่มจับคู่คนที่เหลือใหม่ทั้งหมด? (คู่ที่ล็อกไว้ 🔒 จะไม่เปลี่ยน)')) return;
+  await recomputePairs();
+  renderAdmin();
+  toast('สุ่มจับคู่ใหม่เรียบร้อย 🎉');
+});
+
+document.getElementById('resetSeedBtn').addEventListener('click', async ()=>{
+  if(!confirm('รีเซ็ตกลับไปใช้ข้อมูลตั้งต้นจาก Google Sheets? รายชื่อที่เพิ่ม/แก้ไขเอง และคู่ที่ล็อกไว้ทั้งหมดจะหายไป')) return;
+  participants = SEED_DATA.slice();
+  lockedPairs = [];
+  pairs = makePairs(participants, lockedPairs);
+  await saveParticipants();
+  await saveLocked();
+  await savePairs();
+  renderAdmin();
+  if(adminLevel === 'full') renderLockUI();
+  toast('รีเซ็ตข้อมูลเรียบร้อย');
+});
+
+document.getElementById('addRowBtn').addEventListener('click', ()=>{
+  const f = document.getElementById('addForm');
+  f.style.display = f.style.display === 'none' ? 'grid' : 'none';
+});
+document.getElementById('cancelNewBtn').addEventListener('click', ()=>{
+  document.getElementById('addForm').style.display = 'none';
+});
+document.getElementById('saveNewBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('f_name').value.trim();
+  const nick = document.getElementById('f_nick').value.trim();
+  if(!name || !nick){ toast('กรุณากรอกชื่อ-นามสกุล และชื่อเล่น'); return; }
+  const newPerson = {
+    id: 'p' + Date.now(),
+    ts: new Date().toLocaleString('th-TH'),
+    name, nick,
+    sid: document.getElementById('f_sid').value.trim(),
+    faculty: document.getElementById('f_faculty').value.trim(),
+    ig: document.getElementById('f_ig').value.trim(),
+    year: document.getElementById('f_year').value.trim(),
+    likes: document.getElementById('f_likes').value.trim(),
+    msg1: document.getElementById('f_msg1').value.trim(),
+    msg2: document.getElementById('f_msg2').value.trim(),
+    status: ''
+  };
+  participants.push(newPerson);
+  await saveParticipants();
+  ['f_name','f_nick','f_sid','f_faculty','f_ig','f_year','f_likes','f_msg1','f_msg2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('addForm').style.display = 'none';
+  renderAdmin();
+  if(adminLevel === 'full') renderLockUI();
+  toast('เพิ่มรายชื่อแล้ว — อย่าลืมกด "สุ่มจับคู่ใหม่" ถ้าอยากให้คนนี้เข้าโผด้วย');
+});
+
+/* ---------------- Init ---------------- */
+(async function init(){
+  if(!FIREBASE_CONFIG.apiKey){
+    document.querySelector('.wrap').innerHTML = `
+      <div class="gate" style="margin-top:60px;">
+        <div style="font-family:'Kanit',sans-serif; font-weight:700; font-size:18px; color:var(--coral);">ยังไม่ได้ตั้งค่า Firebase</div>
+        <p style="margin-top:8px;">เปิดไฟล์นี้ด้วยโปรแกรมแก้ไขข้อความ แล้วหาคำว่า <code>FIREBASE_CONFIG</code> ใกล้ต้นไฟล์ ใส่ค่าจาก Firebase Console ของคุณให้ครบ แล้วบันทึกและเปิดใหม่อีกครั้ง</p>
+      </div>`;
+    return;
+  }
+  try{
+    await loadState();
+    renderList();
+  }catch(e){
+    document.querySelector('.wrap').innerHTML = `
+      <div class="gate" style="margin-top:60px;">
+        <div style="font-family:'Kanit',sans-serif; font-weight:700; font-size:18px; color:var(--coral);">เชื่อมต่อฐานข้อมูลไม่สำเร็จ</div>
+        <p style="margin-top:8px;">${escapeHtml(e.message || String(e))}</p>
+        <p style="margin-top:8px; font-size:13px;">ตรวจสอบว่าตั้งค่า Firestore เป็น "test mode" หรือกำหนดกฎการอ่าน/เขียนไว้ถูกต้องแล้ว</p>
+      </div>`;
+  }
+})();
+</script>
+</body>
+</html>
