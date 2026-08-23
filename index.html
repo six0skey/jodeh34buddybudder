@@ -661,8 +661,8 @@ function personBlock(p, theirMessage, messageLabel){
   return `
     <div class="buddy-name">${escapeHtml(p.name)} <span style="color:var(--muted); font-weight:400; font-size:16px;">(${escapeHtml(p.nick)})</span></div>
     <div class="buddy-meta">${escapeHtml(p.faculty)} · ${escapeHtml(p.year)} · ${escapeHtml(p.sid)}</div>
-    ${p.ig ? `<div class="ig-tag">📸 @${escapeHtml(p.ig.replace('@',''))}</div>` : ''}
-    <div class="chips">${chipList(p.likes)}</div>
+    ${p.ig ? `<div class="ig-tag">📸 IG: @${escapeHtml(p.ig.replace('@',''))}</div>` : ''}
+    ${p.likes ? `<div class="lbl" style="margin-top:14px;">ของที่ชอบ</div><div class="chips">${chipList(p.likes)}</div>` : ''}
     ${theirMessage ? `<div class="msgbox"><div class="lbl">${messageLabel}</div>${escapeHtml(theirMessage)}</div>` : ''}
   `;
 }
@@ -850,14 +850,14 @@ document.getElementById('lockBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('shuffleBtn').addEventListener('click', async ()=>{
-  if(!confirm('สุ่มจับคู่คนที่เหลือใหม่ทั้งหมด? (คู่ที่ล็อกไว้ 🔒 จะไม่เปลี่ยน)')) return;
+  if(!confirm('สุ่มจับคู่คนที่เหลือใหม่ทั้งหมด?')) return;
   await recomputePairs();
   renderAdmin();
   toast('สุ่มจับคู่ใหม่เรียบร้อย 🎉');
 });
 
 document.getElementById('resetSeedBtn').addEventListener('click', async ()=>{
-  if(!confirm('รีเซ็ตกลับไปใช้ข้อมูลตั้งต้นจาก Google Sheets? รายชื่อที่เพิ่ม/แก้ไขเอง และคู่ที่ล็อกไว้ทั้งหมดจะหายไป')) return;
+  if(!confirm('รีเซ็ตกลับไปใช้ข้อมูลตั้งต้นจาก Google Sheets? รายชื่อที่เพิ่ม/แก้ไขเอง')) return;
   participants = SEED_DATA.slice();
   lockedPairs = [];
   assignments = buildAssignment(participants, lockedPairs);
