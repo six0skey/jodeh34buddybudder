@@ -669,41 +669,28 @@ function personBlock(p, theirMessage, messageLabel){
 
 function showTicket(meId){
   const me = findPersonById(meId);
-  const iGiveTo = receiverOf(meId);   // person you are the "buddy" for (your budder)
-  const givesToMe = giverOf(meId);    // person who is your "buddy"
+  const iGiveTo = receiverOf(meId);   // person you need to give to (your budder)
   const ticketEl = document.getElementById('ticketArea');
   document.getElementById('matchList').innerHTML = '';
   document.getElementById('searchInput').value = me.name;
 
-  if(!iGiveTo && !givesToMe){
+  if(!iGiveTo){
     ticketEl.innerHTML = `<div class="ticket"><div class="ticket-top"><div class="kicker">Hi, ${escapeHtml(me.nick)}</div><div class="who">${escapeHtml(me.name)}</div></div><div class="perf"></div><div class="ticket-bottom"><div class="empty-note">ยังไม่ได้จับคู่ให้ตอนนี้ รอแอดมินสุ่มจับคู่นะ</div></div></div>`;
     return;
   }
 
-  const buddySection = givesToMe
-    ? personBlock(givesToMe, givesToMe.msg2, 'สิ่งที่บัดดี้อยากบอกคุณ')
-    : '<div class="empty-note">ยังไม่มีใครถูกจับให้เป็นบัดดี้ของคุณ</div>';
-
-  const budderSection = iGiveTo
-    ? personBlock(iGiveTo, iGiveTo.msg1, 'สิ่งที่บัดเดอร์อยากบอกคุณ')
-    : '<div class="empty-note">ยังไม่ได้จับคู่ให้คุณเป็นบัดดี้ของใคร</div>';
+  const budderSection = personBlock(iGiveTo, iGiveTo.msg1, 'สิ่งที่เขาอยากบอกคุณ');
 
   ticketEl.innerHTML = `
     <div class="ticket">
       <div class="ticket-top">
         <div class="kicker">This is your buddy card</div>
         <div class="who">${escapeHtml(me.name)} (${escapeHtml(me.nick)})</div>
-        ${me.msg1 ? `<div class="msgbox" style="margin-top:10px;"><div class="lbl">สิ่งที่คุณอยากบอกบัดดี้ของคุณ</div>${escapeHtml(me.msg1)}</div>` : ''}
-        ${me.msg2 ? `<div class="msgbox" style="margin-top:8px;"><div class="lbl">สิ่งที่คุณอยากบอกบัดเดอร์ของคุณ</div>${escapeHtml(me.msg2)}</div>` : ''}
+        ${me.msg2 ? `<div class="msgbox" style="margin-top:10px;"><div class="lbl">สิ่งที่คุณอยากบอกบัดเดอร์ของคุณ</div>${escapeHtml(me.msg2)}</div>` : ''}
       </div>
       <div class="perf"></div>
       <div class="ticket-bottom">
-        <div class="kicker" style="margin-bottom:6px;">🎁 บัดดี้ของคุณ (คนที่ดูแลคุณ) คือ</div>
-        ${buddySection}
-      </div>
-      <div class="perf"></div>
-      <div class="ticket-bottom">
-        <div class="kicker" style="margin-bottom:6px;">🎀 คุณเป็นบัดดี้ให้กับ (บัดเดอร์ของคุณ)</div>
+        <div class="kicker" style="margin-bottom:6px;">🎁 คุณต้องให้ของกับ</div>
         ${budderSection}
       </div>
     </div>`;
@@ -863,7 +850,7 @@ document.getElementById('lockBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('shuffleBtn').addEventListener('click', async ()=>{
-  if(!confirm('สุ่มจับคู่คนที่เหลือใหม่ทั้งหมด?')) return;
+  if(!confirm('สุ่มจับคู่คนที่เหลือใหม่ทั้งหมด? (คู่ที่ล็อกไว้ 🔒 จะไม่เปลี่ยน)')) return;
   await recomputePairs();
   renderAdmin();
   toast('สุ่มจับคู่ใหม่เรียบร้อย 🎉');
