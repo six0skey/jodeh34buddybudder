@@ -343,13 +343,13 @@
     <div class="eyebrow">Baan Jodeh Huesa · รุ่นที่ 34</div>
     <h1 class="title">JODEH HUESA #34</h1>
     <div class="subtitle">Buddy<span class="x">×</span>Budder</div>
-    <div class="tagline">พิมพ์ชื่อ ชื่อเล่น หรือรหัสนิสิต เพื่อค้นหาบัดดี้ของคุณ</div>
+    <div class="tagline">พิมพ์ชื่อ-นามสกุล หรือรหัสนิสิต เพื่อค้นหาบัดดี้ของคุณ</div>
   </header>
 
   <!-- SEARCH VIEW -->
   <section class="view active" id="view-search">
     <div class="search-box">
-      <input id="searchInput" type="text" placeholder="พิมพ์ชื่อ ชื่อเล่น หรือรหัสนิสิตของคุณ...">
+      <input id="searchInput" type="text" placeholder="พิมพ์ชื่อ-นามสกุล หรือรหัสนิสิตของคุณ...">
       <button id="searchBtn">ค้นหา</button>
     </div>
     <div class="match-list" id="matchList"></div>
@@ -595,10 +595,10 @@ function doSearch(){
   listEl.innerHTML = '';
   if(!q){ return; }
   const results = participants.filter(p=>
-    normalize(p.name).includes(q) || normalize(p.nick).includes(q) || normalize(p.sid).includes(q)
+    normalize(p.name).includes(q) || normalize(p.sid).includes(q)
   );
   if(results.length === 0){
-    listEl.innerHTML = '<div class="empty-note">ไม่พบชื่อนี้ในระบบ ลองพิมพ์ชื่อ ชื่อเล่น หรือรหัสนิสิตใหม่อีกครั้ง</div>';
+    listEl.innerHTML = '<div class="empty-note">ไม่พบชื่อนี้ในระบบ ลองพิมพ์ชื่อ-นามสกุล หรือรหัสนิสิตใหม่อีกครั้ง</div>';
     return;
   }
   if(results.length === 1){
