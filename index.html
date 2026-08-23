@@ -863,7 +863,7 @@ document.getElementById('lockBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('shuffleBtn').addEventListener('click', async ()=>{
-  if(!confirm('สุ่มจับคู่คนที่เหลือใหม่ทั้งหมด? (คู่ที่ล็อกไว้ 🔒 จะไม่เปลี่ยน)')) return;
+  if(!confirm('สุ่มจับคู่คนที่เหลือใหม่ทั้งหมด?')) return;
   await recomputePairs();
   renderAdmin();
   toast('สุ่มจับคู่ใหม่เรียบร้อย 🎉');
