@@ -789,7 +789,7 @@ function renderAdmin(){
     btn.addEventListener('click', async ()=>{
       const id = btn.dataset.del;
       const person = findPersonById(id);
-      if(!confirm(`ลบ "${person.name}" ออกจากระบบ? การจับคู่และการล็อกของคนนี้จะถูกล้างไปด้วย`)) return;
+      if(!confirm(`ลบ "${person.name}" ออกจากระบบ? การจับคู่จะถูกล้างไปด้วย`)) return;
       participants = participants.filter(p=>p.id!==id);
       lockedPairs = lockedPairs.filter(g=>!g.includes(id));
       await saveParticipants();
@@ -899,7 +899,7 @@ document.getElementById('saveNewBtn').addEventListener('click', async ()=>{
   document.getElementById('addForm').style.display = 'none';
   renderAdmin();
   if(adminLevel === 'full') renderLockUI();
-  toast('เพิ่มรายชื่อแล้ว — อย่าลืมกด "สุ่มจับคู่ใหม่" ถ้าอยากให้คนนี้เข้าระบบสุ่มด้วย');
+  toast('เพิ่มรายชื่อแล้ว — อย่าลืมกด "สุ่มจับคู่ใหม่" ถ้าอยากให้คนนี้เข้าโผด้วย');
 });
 
 /* ---------------- Init ---------------- */
