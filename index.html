@@ -380,6 +380,7 @@
         <button class="btn primary" id="shuffleBtn">🎲 สุ่มจับคู่ใหม่ทั้งหมด</button>
         <button class="btn" id="addRowBtn">➕ เพิ่มรายชื่อใหม่</button>
         <button class="btn" id="viewListBtn">📋 ดูรายชื่อคู่ทั้งหมด</button>
+        <button class="btn" id="syncSeedBtn">🔄 ซิงก์ข้อมูลโปรไฟล์ล่าสุด</button>
         <button class="btn ghost" id="resetSeedBtn">↺ รีเซ็ตเป็นข้อมูลตั้งต้น</button>
       </div>
 
@@ -421,7 +422,7 @@
     </div>
   </section>
 
-  <footer> Buddy&Budder Jodeh Huesa รุ่นที่ 34 · ข้อมูลเก็บไว้ในระบบของเว็บนี้เท่านั้น</footer>
+  <footer>Made for น้องใหม่ Jodeh Huesa รุ่นที่ 34 · ข้อมูลเก็บไว้ในระบบของเว็บนี้เท่านั้น</footer>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -789,7 +790,7 @@ function renderAdmin(){
     btn.addEventListener('click', async ()=>{
       const id = btn.dataset.del;
       const person = findPersonById(id);
-      if(!confirm(`ลบ "${person.name}" ออกจากระบบ? การจับคู่จะถูกล้างไปด้วย`)) return;
+      if(!confirm(`ลบ "${person.name}" ออกจากระบบ? การจับคู่และการล็อกของคนนี้จะถูกล้างไปด้วย`)) return;
       participants = participants.filter(p=>p.id!==id);
       lockedPairs = lockedPairs.filter(g=>!g.includes(id));
       await saveParticipants();
@@ -850,14 +851,32 @@ document.getElementById('lockBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('shuffleBtn').addEventListener('click', async ()=>{
-  if(!confirm('สุ่มจับคู่คนที่เหลือใหม่ทั้งหมด?')) return;
+  if(!confirm('สุ่มจับคู่คนที่เหลือใหม่ทั้งหมด? (คู่ที่ล็อกไว้ 🔒 จะไม่เปลี่ยน)')) return;
   await recomputePairs();
   renderAdmin();
   toast('สุ่มจับคู่ใหม่เรียบร้อย 🎉');
 });
 
+document.getElementById('syncSeedBtn').addEventListener('click', async ()=>{
+  if(!confirm('ดึงข้อมูลโปรไฟล์ล่าสุดจากไฟล์นี้ (ชื่อ, ไอจี, ของที่ชอบ, ข้อความ ฯลฯ) มาอัปเดตทับข้อมูลเดิมของทุกคนที่มีอยู่แล้ว?\n\nคู่ที่จับไปแล้วและคู่ที่ล็อกไว้จะไม่เปลี่ยนแปลง — เฉพาะรายละเอียดส่วนตัวเท่านั้นที่จะถูกอัปเดต')) return;
+  const seedMap = {};
+  SEED_DATA.forEach(p=>{ seedMap[p.id] = p; });
+  let updated = 0, added = 0;
+  participants = participants.map(p=>{
+    if(seedMap[p.id]){ updated++; return { ...seedMap[p.id] }; }
+    return p;
+  });
+  const existingIds = new Set(participants.map(p=>p.id));
+  SEED_DATA.forEach(p=>{
+    if(!existingIds.has(p.id)){ participants.push({ ...p }); added++; }
+  });
+  await saveParticipants();
+  renderAdmin();
+  toast(`ซิงก์ข้อมูลแล้ว — อัปเดต ${updated} คน${added ? `, เพิ่มใหม่ ${added} คน` : ''}`);
+});
+
 document.getElementById('resetSeedBtn').addEventListener('click', async ()=>{
-  if(!confirm('รีเซ็ตกลับไปใช้ข้อมูลตั้งต้นจาก Google Sheets? รายชื่อที่เพิ่ม/แก้ไขเอง')) return;
+  if(!confirm('รีเซ็ตกลับไปใช้ข้อมูลตั้งต้นจาก Google Sheets? รายชื่อที่เพิ่ม/แก้ไขเอง และคู่ที่ล็อกไว้ทั้งหมดจะหายไป')) return;
   participants = SEED_DATA.slice();
   lockedPairs = [];
   assignments = buildAssignment(participants, lockedPairs);
