@@ -378,13 +378,13 @@
       <div class="stat-bar" id="adminStats"></div>
       <div class="admin-toolbar">
         <button class="btn primary" id="shuffleBtn">🎲 สุ่มจับคู่ใหม่ทั้งหมด</button>
-        <button class="btn" id="matchUnmatchedBtn">🧩 จับคู่เฉพาะคนที่ยังไม่มีคู่</button>
+        <button class="btn" id="matchUnmatchedBtn">🧩 ซ่อม/จับคู่คนที่ยังไม่ครบ</button>
         <button class="btn" id="addRowBtn">➕ เพิ่มรายชื่อใหม่</button>
         <button class="btn" id="bulkRowBtn">📥 นำเข้าหลายคนพร้อมกัน</button>
         <button class="btn" id="viewListBtn">📋 ดูรายชื่อคู่ทั้งหมด</button>
-        <button class="btn" id="syncSeedBtn">🔄 ซิงก์ข้อมูลโปรไฟล์ล่าสุด</button>
       </div>
       <div class="admin-toolbar" style="margin-top:-6px;">
+        <button class="btn ghost small" id="syncSeedBtn" style="color:var(--muted);">🔄 ซิงก์ข้อมูลโปรไฟล์ล่าสุด</button>
         <button class="btn ghost small" id="resetSeedBtn" style="color:var(--coral); border-color:var(--coral-dim); margin-left:auto;">⚠️ รีเซ็ตเป็นข้อมูลตั้งต้น (ลบข้อมูลที่เพิ่มเอง)</button>
       </div>
 
@@ -553,50 +553,108 @@ function buildAssignment(list, locks){
   return result;
 }
 
-// Weaves only people who currently have no outgoing edge (no assignment at all) into
-// the existing chain(s), without touching anyone who's already matched. Picks one
-// random existing edge, breaks it, and threads the unmatched people through in its
-// place — e.g. A→B becomes A→C→D→B if C and D were unmatched. Everyone else's
-// giver/receiver stays exactly as it was.
-function insertUnmatchedIntoChain(list, currentAssignments, locks){
+// Repairs the giving-chain into a fully valid permutation, touching as few
+// existing edges as possible. It decomposes the current assignments into fully
+// closed, self-consistent cycles (kept completely untouched) and "broken"
+// fragments — open paths and isolated people missing a buddy, a budder, or both,
+// whether from brand-new imports, deleted participants leaving dangling
+// references, or duplicate/corrupted claims. All broken fragments are woven back
+// together into a single loop, reusing exactly one edge from an existing closed
+// cycle as the splice point if one exists (so everyone ends up in one connected
+// chain rather than a separate disconnected loop).
+function repairAssignments(list, currentAssignments, locks){
   locks = locks || [];
-  const allIds = list.map(p=>p.id);
-  const newIds = allIds.filter(id => !(id in currentAssignments));
-  if(newIds.length === 0) return { assignments: { ...currentAssignments }, inserted: 0 };
+  const validIds = new Set(list.map(p=>p.id));
 
-  const result = { ...currentAssignments };
-  const edges = Object.entries(currentAssignments);
-
-  // New people might themselves have locked edges among each other — respect those
-  // by pre-chaining them the same way buildAssignment does, then splice the whole
-  // group in as one unit.
-  const relevantLocks = locks.filter(([g,r]) => newIds.includes(g) && newIds.includes(r));
-  const built = buildAssignment(newIds.map(id=>({id})), relevantLocks);
-  // built is itself a closed loop over newIds — break it at one point to get a chain
-  const order = [];
-  const startId = newIds[0];
-  let cur = startId;
-  const seen = new Set();
-  while(!seen.has(cur)){
-    order.push(cur);
-    seen.add(cur);
-    cur = built[cur];
-  }
-
-  if(edges.length === 0){
-    // No existing chain to splice into — the new people's own loop stands alone
-    Object.assign(result, built);
-    return { assignments: result, inserted: newIds.length };
-  }
-
-  const [g, r] = edges[Math.floor(Math.random()*edges.length)];
-  let prev = g;
-  order.forEach(id=>{
-    result[prev] = id;
-    prev = id;
+  // Step 1: build a clean functional mapping, resolving duplicate receiver claims
+  // by keeping only the first-seen giver for each receiver.
+  const claimed = new Set();
+  const clean = {};
+  Object.entries(currentAssignments).forEach(([g,r])=>{
+    if(!validIds.has(g) || !validIds.has(r)) return; // dangling ref to a removed person
+    if(g === r) return;
+    if(claimed.has(r)) return; // duplicate claim, drop it
+    if(clean[g] !== undefined) return;
+    clean[g] = r;
+    claimed.add(r);
   });
-  result[prev] = r;
-  return { assignments: result, inserted: newIds.length };
+
+  // Step 2: find path heads (valid ids with no incoming edge) and walk each path
+  // forward until it dead-ends.
+  const hasIncoming = new Set(Object.values(clean));
+  const visited = new Set();
+  const fragments = [];
+  list.forEach(p=>{
+    const id = p.id;
+    if(visited.has(id) || hasIncoming.has(id)) return;
+    let cur = id;
+    const path = [cur];
+    visited.add(cur);
+    while(clean[cur] !== undefined && !visited.has(clean[cur])){
+      cur = clean[cur];
+      path.push(cur);
+      visited.add(cur);
+    }
+    fragments.push(path);
+  });
+  const brokenCount = new Set(fragments.flat()).size;
+
+  // Step 3: anything left unvisited is part of an already-closed, fully valid
+  // cycle — leave it completely untouched.
+  const closedCycleIds = new Set();
+  list.forEach(p=>{
+    if(visited.has(p.id)) return;
+    let cur = p.id;
+    while(!visited.has(cur)){
+      visited.add(cur);
+      closedCycleIds.add(cur);
+      cur = clean[cur];
+    }
+  });
+
+  // Safety net: anyone still somehow unvisited becomes a trivial isolated fragment
+  list.forEach(p=>{
+    if(!visited.has(p.id)){ fragments.push([p.id]); visited.add(p.id); }
+  });
+
+  if(fragments.length === 0){
+    return { assignments: { ...clean }, repaired: 0 };
+  }
+
+  const result = { ...clean };
+
+  // Step 4: if a valid closed cycle exists, open exactly one of its edges so the
+  // broken fragments can be woven back into that very same structure.
+  if(closedCycleIds.size > 0){
+    const anchorArr = [...closedCycleIds];
+    const anchor = anchorArr[Math.floor(Math.random()*anchorArr.length)];
+    let cur = result[anchor];
+    delete result[anchor];
+    const openedPath = [cur];
+    while(result[cur] !== undefined && result[cur] !== anchor){
+      const nxt = result[cur];
+      delete result[cur];
+      cur = nxt;
+      openedPath.push(cur);
+    }
+    delete result[cur];
+    openedPath.push(anchor);
+    fragments.push(openedPath);
+  }
+
+  // Step 5: weave all fragments into one big loop — tail feeds next head, wraps
+  // around — same technique buildAssignment uses to join locked chains.
+  const order = shuffle(fragments);
+  for(let i=0;i<order.length;i++){
+    const tail = order[i][order[i].length-1];
+    const nextHead = order[(i+1)%order.length][0];
+    result[tail] = nextHead;
+  }
+  order.forEach(frag=>{
+    for(let i=0;i<frag.length-1;i++){ result[frag[i]] = frag[i+1]; }
+  });
+
+  return { assignments: result, repaired: brokenCount };
 }
 
 /* =========================================================================
@@ -919,14 +977,14 @@ document.getElementById('shuffleBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('matchUnmatchedBtn').addEventListener('click', async ()=>{
-  const unmatchedCount = participants.filter(p => !(p.id in assignments)).length;
-  if(unmatchedCount === 0){ toast('ทุกคนมีคู่ครบแล้ว ไม่มีใครต้องจับคู่เพิ่ม'); return; }
-  if(!confirm(`พบ ${unmatchedCount} คนที่ยังไม่มีคู่ — จะสอดแทรกเข้าไปในวงจรที่มีอยู่แล้ว โดยจะมีคู่เดิมแค่ 1 คู่เท่านั้นที่เปลี่ยน (จุดที่ถูกแทรก) คนอื่นๆ ที่มีคู่แล้วจะไม่เปลี่ยนเลย ดำเนินการต่อ?`)) return;
-  const { assignments: newAssignments, inserted } = insertUnmatchedIntoChain(participants, assignments, lockedPairs);
+  const { repaired: previewCount } = repairAssignments(participants, assignments, lockedPairs);
+  if(previewCount === 0){ toast('ทุกคนมีทั้งบัดดี้และบัดเดอร์ครบแล้ว ไม่มีใครต้องซ่อม'); return; }
+  if(!confirm(`พบ ${previewCount} คนที่ยังขาดบัดดี้และ/หรือบัดเดอร์ (ไม่ว่าจะขาดฝั่งเดียวหรือทั้งสองฝั่ง) — จะจับคู่คนกลุ่มนี้ใหม่ และแทรกกลับเข้าไปในวงจรเดิม คนที่มีทั้งบัดดี้และบัดเดอร์ครบถูกต้องอยู่แล้วจะไม่ถูกแตะเลย ดำเนินการต่อ?`)) return;
+  const { assignments: newAssignments, repaired } = repairAssignments(participants, assignments, lockedPairs);
   assignments = newAssignments;
   await saveAssignments();
   renderAdmin();
-  toast(`จับคู่คนใหม่ ${inserted} คนเข้าไปในวงจรเดิมเรียบร้อย 🧩`);
+  toast(`ซ่อม/จับคู่ ${repaired} คนเรียบร้อย 🧩`);
 });
 
 document.getElementById('syncSeedBtn').addEventListener('click', async ()=>{
