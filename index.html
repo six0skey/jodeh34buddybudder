@@ -378,10 +378,14 @@
       <div class="stat-bar" id="adminStats"></div>
       <div class="admin-toolbar">
         <button class="btn primary" id="shuffleBtn">🎲 สุ่มจับคู่ใหม่ทั้งหมด</button>
+        <button class="btn" id="matchUnmatchedBtn">🧩 จับคู่เฉพาะคนที่ยังไม่มีคู่</button>
         <button class="btn" id="addRowBtn">➕ เพิ่มรายชื่อใหม่</button>
+        <button class="btn" id="bulkRowBtn">📥 นำเข้าหลายคนพร้อมกัน</button>
         <button class="btn" id="viewListBtn">📋 ดูรายชื่อคู่ทั้งหมด</button>
         <button class="btn" id="syncSeedBtn">🔄 ซิงก์ข้อมูลโปรไฟล์ล่าสุด</button>
-        <button class="btn ghost" id="resetSeedBtn">↺ รีเซ็ตเป็นข้อมูลตั้งต้น</button>
+      </div>
+      <div class="admin-toolbar" style="margin-top:-6px;">
+        <button class="btn ghost small" id="resetSeedBtn" style="color:var(--coral); border-color:var(--coral-dim); margin-left:auto;">⚠️ รีเซ็ตเป็นข้อมูลตั้งต้น (ลบข้อมูลที่เพิ่มเอง)</button>
       </div>
 
       <div class="form-grid" id="lockForm" style="display:none;">
@@ -391,6 +395,17 @@
         <div><label>คนรับ (บัดเดอร์)</label><select id="lock_b"></select></div>
         <div class="full"><button class="btn primary small" id="lockBtn">🔒 ล็อกคู่นี้</button></div>
         <div class="full" id="lockedList" style="display:flex; flex-direction:column; gap:6px; margin-top:4px;"></div>
+      </div>
+
+      <div class="form-grid" id="bulkForm" style="display:none;">
+        <div class="full" style="font-family:'Kanit',sans-serif; font-weight:600; font-size:15px; color:var(--yellow);">📥 นำเข้าหลายคนพร้อมกัน</div>
+        <div class="full" style="font-size:12.5px; color:var(--muted); margin-top:-4px;">คัดลอกแถวจาก Google Sheets มาวางได้เลย (หลายแถวพร้อมกัน) เรียงคอลัมน์แบบนี้: Timestamp, ชื่อ-นามสกุล, ชื่อเล่น, รหัสนิสิต, คณะ, Instagram, ชั้นปี, สิ่งที่ชอบ, อยากบอกบัดดี้, อยากบอกบัดเดอร์, สถานะ — ระบบจะข้ามแถวที่รหัสนิสิตซ้ำกับที่มีอยู่แล้วให้อัตโนมัติ ไม่ลบหรือแก้ไขคนที่มีอยู่เดิม</div>
+        <div class="full"><textarea id="bulkText" rows="8" placeholder="วางแถวจาก Google Sheets ตรงนี้ (คั่นด้วย Tab)..."></textarea></div>
+        <div class="full" style="display:flex; gap:8px; align-items:center;">
+          <button class="btn primary small" id="bulkImportBtn">นำเข้าข้อมูล</button>
+          <button class="btn ghost small" id="bulkCancelBtn">ยกเลิก</button>
+          <span id="bulkResult" style="font-size:12.5px; color:var(--muted);"></span>
+        </div>
       </div>
 
       <div class="form-grid" id="addForm" style="display:none;">
@@ -536,6 +551,52 @@ function buildAssignment(list, locks){
   const result = {};
   finalEdges.forEach(([g,r])=>{ result[g]=r; });
   return result;
+}
+
+// Weaves only people who currently have no outgoing edge (no assignment at all) into
+// the existing chain(s), without touching anyone who's already matched. Picks one
+// random existing edge, breaks it, and threads the unmatched people through in its
+// place — e.g. A→B becomes A→C→D→B if C and D were unmatched. Everyone else's
+// giver/receiver stays exactly as it was.
+function insertUnmatchedIntoChain(list, currentAssignments, locks){
+  locks = locks || [];
+  const allIds = list.map(p=>p.id);
+  const newIds = allIds.filter(id => !(id in currentAssignments));
+  if(newIds.length === 0) return { assignments: { ...currentAssignments }, inserted: 0 };
+
+  const result = { ...currentAssignments };
+  const edges = Object.entries(currentAssignments);
+
+  // New people might themselves have locked edges among each other — respect those
+  // by pre-chaining them the same way buildAssignment does, then splice the whole
+  // group in as one unit.
+  const relevantLocks = locks.filter(([g,r]) => newIds.includes(g) && newIds.includes(r));
+  const built = buildAssignment(newIds.map(id=>({id})), relevantLocks);
+  // built is itself a closed loop over newIds — break it at one point to get a chain
+  const order = [];
+  const startId = newIds[0];
+  let cur = startId;
+  const seen = new Set();
+  while(!seen.has(cur)){
+    order.push(cur);
+    seen.add(cur);
+    cur = built[cur];
+  }
+
+  if(edges.length === 0){
+    // No existing chain to splice into — the new people's own loop stands alone
+    Object.assign(result, built);
+    return { assignments: result, inserted: newIds.length };
+  }
+
+  const [g, r] = edges[Math.floor(Math.random()*edges.length)];
+  let prev = g;
+  order.forEach(id=>{
+    result[prev] = id;
+    prev = id;
+  });
+  result[prev] = r;
+  return { assignments: result, inserted: newIds.length };
 }
 
 /* =========================================================================
@@ -857,6 +918,17 @@ document.getElementById('shuffleBtn').addEventListener('click', async ()=>{
   toast('สุ่มจับคู่ใหม่เรียบร้อย 🎉');
 });
 
+document.getElementById('matchUnmatchedBtn').addEventListener('click', async ()=>{
+  const unmatchedCount = participants.filter(p => !(p.id in assignments)).length;
+  if(unmatchedCount === 0){ toast('ทุกคนมีคู่ครบแล้ว ไม่มีใครต้องจับคู่เพิ่ม'); return; }
+  if(!confirm(`พบ ${unmatchedCount} คนที่ยังไม่มีคู่ — จะสอดแทรกเข้าไปในวงจรที่มีอยู่แล้ว โดยจะมีคู่เดิมแค่ 1 คู่เท่านั้นที่เปลี่ยน (จุดที่ถูกแทรก) คนอื่นๆ ที่มีคู่แล้วจะไม่เปลี่ยนเลย ดำเนินการต่อ?`)) return;
+  const { assignments: newAssignments, inserted } = insertUnmatchedIntoChain(participants, assignments, lockedPairs);
+  assignments = newAssignments;
+  await saveAssignments();
+  renderAdmin();
+  toast(`จับคู่คนใหม่ ${inserted} คนเข้าไปในวงจรเดิมเรียบร้อย 🧩`);
+});
+
 document.getElementById('syncSeedBtn').addEventListener('click', async ()=>{
   if(!confirm('ดึงข้อมูลโปรไฟล์ล่าสุดจากไฟล์นี้ (ชื่อ, ไอจี, ของที่ชอบ, ข้อความ ฯลฯ) มาอัปเดตทับข้อมูลเดิมของทุกคนที่มีอยู่แล้ว?\n\nคู่ที่จับไปแล้วและคู่ที่ล็อกไว้จะไม่เปลี่ยนแปลง — เฉพาะรายละเอียดส่วนตัวเท่านั้นที่จะถูกอัปเดต')) return;
   const seedMap = {};
@@ -876,7 +948,8 @@ document.getElementById('syncSeedBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('resetSeedBtn').addEventListener('click', async ()=>{
-  if(!confirm('รีเซ็ตกลับไปใช้ข้อมูลตั้งต้นจาก Google Sheets? รายชื่อที่เพิ่ม/แก้ไขเอง และคู่ที่ล็อกไว้ทั้งหมดจะหายไป')) return;
+  const typed = prompt('⚠️ คำเตือน: การกระทำนี้จะลบรายชื่อทั้งหมดที่เพิ่ม/แก้ไขเอง กลับไปเหลือแค่ 81 คนจากไฟล์ตั้งต้นเท่านั้น และล้างคู่ที่ล็อกไว้ทั้งหมดด้วย\n\nถ้าแน่ใจจริงๆ ให้พิมพ์คำว่า RESET (ตัวพิมพ์ใหญ่ทั้งหมด) แล้วกดตกลง:');
+  if(typed !== 'RESET'){ toast('ยกเลิกการรีเซ็ต ไม่มีอะไรเปลี่ยนแปลง'); return; }
   participants = SEED_DATA.slice();
   lockedPairs = [];
   assignments = buildAssignment(participants, lockedPairs);
@@ -895,6 +968,58 @@ document.getElementById('addRowBtn').addEventListener('click', ()=>{
 document.getElementById('cancelNewBtn').addEventListener('click', ()=>{
   document.getElementById('addForm').style.display = 'none';
 });
+
+/* ---------------- Bulk import ---------------- */
+document.getElementById('bulkRowBtn').addEventListener('click', ()=>{
+  const f = document.getElementById('bulkForm');
+  f.style.display = f.style.display === 'none' ? 'grid' : 'none';
+});
+document.getElementById('bulkCancelBtn').addEventListener('click', ()=>{
+  document.getElementById('bulkForm').style.display = 'none';
+  document.getElementById('bulkText').value = '';
+  document.getElementById('bulkResult').textContent = '';
+});
+
+function parseBulkText(text){
+  const lines = text.split('\n').map(l=>l.replace(/\r$/,'')).filter(l=>l.trim().length>0);
+  const rows = [];
+  lines.forEach(line=>{
+    const cols = line.split('\t');
+    while(cols.length < 11) cols.push('');
+    const [ts, name, nick, sid, faculty, ig, year, likes, msg1, msg2, status] = cols;
+    if(!name.trim() && !nick.trim()) return; // skip garbage/empty rows
+    rows.push({
+      ts: ts.trim(), name: name.trim(), nick: nick.trim(), sid: sid.trim(),
+      faculty: faculty.trim(), ig: ig.trim().replace('@',''), year: year.trim(),
+      likes: likes.trim(), msg1: msg1.trim(), msg2: msg2.trim(), status: status.trim()
+    });
+  });
+  return rows;
+}
+
+document.getElementById('bulkImportBtn').addEventListener('click', async ()=>{
+  const text = document.getElementById('bulkText').value;
+  const rows = parseBulkText(text);
+  if(rows.length === 0){
+    document.getElementById('bulkResult').textContent = 'ไม่พบข้อมูลที่นำเข้าได้ — ตรวจสอบว่าคัดลอกมาทั้งแถวจาก Google Sheets (คั่นด้วย Tab)';
+    return;
+  }
+  const existingSids = new Set(participants.map(p=>p.sid).filter(Boolean));
+  let added = 0, skipped = 0;
+  rows.forEach(r=>{
+    if(r.sid && existingSids.has(r.sid)){ skipped++; return; }
+    const newPerson = { id: 'p'+Date.now()+'_'+Math.random().toString(36).slice(2,8), ...r };
+    participants.push(newPerson);
+    if(r.sid) existingSids.add(r.sid);
+    added++;
+  });
+  await saveParticipants();
+  renderAdmin();
+  document.getElementById('bulkText').value = '';
+  document.getElementById('bulkResult').textContent = `นำเข้าสำเร็จ ${added} คน${skipped ? `, ข้าม ${skipped} คน (รหัสนิสิตซ้ำกับที่มีอยู่แล้ว)` : ''}`;
+  toast(`นำเข้าแล้ว ${added} คน — อย่าลืมกด "สุ่มจับคู่ใหม่" เพื่อให้คนใหม่เข้าโผด้วย`);
+});
+
 document.getElementById('saveNewBtn').addEventListener('click', async ()=>{
   const name = document.getElementById('f_name').value.trim();
   const nick = document.getElementById('f_nick').value.trim();
